@@ -1,6 +1,8 @@
 package com.barabanov.metricsExchange.entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -18,4 +20,7 @@ public class User extends AbstractEntity {
     private String passwordHash;
 
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 }

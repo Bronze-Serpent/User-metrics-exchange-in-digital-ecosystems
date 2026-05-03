@@ -13,8 +13,8 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true, exclude = {"fromCompany", "toCompany"})
+@EqualsAndHashCode(callSuper = true, exclude = {"fromCompany", "toCompany"})
 @Entity
 public class TransferRequest extends AbstractEntity {
 

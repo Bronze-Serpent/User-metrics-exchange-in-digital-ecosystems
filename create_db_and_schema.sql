@@ -9,6 +9,7 @@ CREATE TABLE metrics_exchange.user
     id            BIGSERIAL PRIMARY KEY NOT NULL,
     password_hash VARCHAR(300),
     email         VARCHAR(250),
+    role          VARCHAR(250),
     version       INTEGER,
     created_at    TIMESTAMPTZ
 );
@@ -21,6 +22,17 @@ CREATE TABLE metrics_exchange.company
     owner_user_id BIGINT REFERENCES metrics_exchange.user (id),
     version       INTEGER,
     created_at    TIMESTAMPTZ
+);
+
+CREATE TABLE metrics_exchange.company_point
+(
+    id         BIGSERIAL PRIMARY KEY NOT NULL,
+    company_id BIGINT                NOT NULL,
+    format     TEXT,
+    url        TEXT,
+    status     VARCHAR(250),
+    version    INTEGER,
+    created_at TIMESTAMPTZ
 );
 
 CREATE TABLE metrics_exchange.transfer_request
@@ -62,4 +74,11 @@ CREATE TABLE metrics_exchange.alliance_point
     status      VARCHAR(250),
     version     INTEGER,
     created_at  TIMESTAMPTZ
+);
+
+CREATE TABLE metrics_exchange.alliance_company_points
+(
+    id                BIGSERIAL PRIMARY KEY NOT NULL,
+    alliance_point_id BIGINT                NOT NULL,
+    company_point_id  BIGINT                NOT NULL
 );

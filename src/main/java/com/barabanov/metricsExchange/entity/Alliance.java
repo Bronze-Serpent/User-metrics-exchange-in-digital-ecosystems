@@ -1,9 +1,6 @@
 package com.barabanov.metricsExchange.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -15,8 +12,8 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true, exclude = "companies")
+@EqualsAndHashCode(callSuper = true, exclude = "companies")
 @Entity
 public class Alliance extends AbstractEntity {
 
@@ -28,4 +25,7 @@ public class Alliance extends AbstractEntity {
             inverseJoinColumns = {@JoinColumn(name = "company_id")})
     @ManyToMany
     private Set<Company> companies;
+
+    @OneToMany(mappedBy = "alliance")
+    private Set<AlliancePoint> points;
 }
