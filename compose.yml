@@ -1,0 +1,14 @@
+version: "3.3"
+#name: user-metrics-exchange-in-digital-ecosystems - не поддерживается в версии 3.3
+services:
+  postgres:
+    container_name: postgres
+    image:  postgres:16.13
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_USER=postgres
+    volumes:
+      - ./create_db_and_schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./volumes/postgres/database:/var/lib/postgresql/data

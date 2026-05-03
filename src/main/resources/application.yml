@@ -1,2 +1,11 @@
 spring:
   application.name: user-metrics-exchange-in-digital-ecosystems
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metrics_exchange_db
+    username: postgres
+    password: pass
+    hikari:
+      schema: metrics_exchange
+  jpa:
+    hibernate:
+      ddl-auto: validate

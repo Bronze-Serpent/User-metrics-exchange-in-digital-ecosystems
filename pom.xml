@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>com.barabanov</groupId>
-    <artifactId>user-metrics-exchange-in-digital-ecosystems</artifactId>
+    <artifactId>User-metrics-exchange-in-digital-ecosystems</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
@@ -26,6 +26,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
         </dependency>
 
         <dependency>
@@ -48,7 +52,6 @@
             <artifactId>querydsl-jpa</artifactId>
             <version>7.1</version>
         </dependency>
-        
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
