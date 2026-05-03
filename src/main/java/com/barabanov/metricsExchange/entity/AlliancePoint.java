@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Set;
+import java.util.List;
 
 
 @Setter
@@ -32,5 +32,5 @@ public class AlliancePoint extends AbstractEntity {
             joinColumns = {@JoinColumn(name = "alliance_point_id")},
             inverseJoinColumns = {@JoinColumn(name = "company_point_id")})
     @ManyToMany
-    private Set<CompanyPoint> companyPoints;
+    private List<CompanyPoint> companyPoints;
 }

@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Set;
+import java.util.List;
 
 @Setter
 @Getter
@@ -26,8 +26,8 @@ public class Company extends AbstractEntity {
     private User owner;
 
     @OneToMany(mappedBy = "company")
-    private Set<CompanyPoint> points;
+    private List<CompanyPoint> points;
 
     @ManyToMany(mappedBy = "companies")
-    private Set<Alliance> alliances;
+    private List<Alliance> alliances;
 }
