@@ -1,9 +1,6 @@
 package com.barabanov.metricsExchange.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -16,7 +13,8 @@ import lombok.experimental.SuperBuilder;
 @ToString(callSuper = true, exclude = {"fromCompany", "toCompany"})
 @EqualsAndHashCode(callSuper = true, exclude = {"fromCompany", "toCompany"})
 @Entity
-public class TransferRequest extends AbstractEntity {
+@Table(name = "transfer_request")
+public class TransferRequestEntity extends AbstractEntity {
 
     private String fromProfileId;
 
@@ -24,15 +22,16 @@ public class TransferRequest extends AbstractEntity {
 
     private String comment;
 
-    private String decision;
+    @Enumerated(EnumType.STRING)
+    private TransferDecisionType decision;
 
     private String decisionComment;
 
     @JoinColumn(name = "from_company_id")
     @ManyToOne(fetch = FetchType.LAZY)
-    private Company fromCompany;
+    private CompanyEntity fromCompany;
 
     @JoinColumn(name = "to_company_id")
     @ManyToOne(fetch = FetchType.LAZY)
-    private Company toCompany;
+    private CompanyEntity toCompany;
 }

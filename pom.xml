@@ -16,6 +16,17 @@
 
     <properties>
         <java.version>21</java.version>
+        <!--        Поскольку spring сам пытается найти некоторые зависимости для querydsl не стоит использовать 'querydsl.version'
+         для того чтобы задать версию т.к. у spring есть зависимость ниже, у которой мы переопределим версию и будет ошибка
+         т.к. в com.querydsl нет новых версий. Можно использовать просто другое название настройки -->
+        <!--        <dependency>
+               <groupId>com.querydsl</groupId>
+               <artifactId>querydsl-bom</artifactId>
+               <version>${querydsl.version}</version>
+               <type>pom</type>
+               <scope>import</scope>
+             </dependency>-->
+        <!--        <querydsl.version>7.1</querydsl.version>-->
     </properties>
 
     <dependencies>
@@ -112,7 +123,7 @@
                         <path>
                             <groupId>io.github.openfeign.querydsl</groupId>
                             <artifactId>querydsl-apt</artifactId>
-                            <version>${querydsl.version}</version>
+                            <version>7.1</version>
                             <classifier>jakarta</classifier>
                         </path>
                     </annotationProcessorPaths>

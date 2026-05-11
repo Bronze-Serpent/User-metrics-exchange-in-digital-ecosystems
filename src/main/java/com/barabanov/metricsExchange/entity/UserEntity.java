@@ -1,8 +1,6 @@
 package com.barabanov.metricsExchange.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -12,10 +10,11 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true, exclude = "linkedCompany")
+@EqualsAndHashCode(callSuper = true, exclude = "linkedCompany")
 @Entity
-public class User extends AbstractEntity {
+@Table(name = "user")
+public class UserEntity extends AbstractEntity {
 
     private String passwordHash;
 
@@ -23,4 +22,7 @@ public class User extends AbstractEntity {
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private CompanyEntity linkedCompany;
 }

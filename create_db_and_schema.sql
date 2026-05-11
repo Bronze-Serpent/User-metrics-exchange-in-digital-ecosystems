@@ -6,12 +6,13 @@ CREATE SCHEMA metrics_exchange;
 
 CREATE TABLE metrics_exchange.user
 (
-    id            BIGSERIAL PRIMARY KEY NOT NULL,
-    password_hash VARCHAR(300),
-    email         VARCHAR(250),
-    role          VARCHAR(250),
-    version       INTEGER,
-    created_at    TIMESTAMPTZ
+    id                BIGSERIAL PRIMARY KEY NOT NULL,
+    password_hash     VARCHAR(300),
+    email             VARCHAR(250),
+    role              VARCHAR(250),
+    linked_company_id BIGINT,
+    version           INTEGER,
+    created_at        TIMESTAMPTZ
 );
 
 CREATE TABLE metrics_exchange.company
@@ -24,15 +25,39 @@ CREATE TABLE metrics_exchange.company
     created_at    TIMESTAMPTZ
 );
 
+ALTER TABLE metrics_exchange.user
+    ADD CONSTRAINT user_company_foreign_key
+        FOREIGN KEY (linked_company_id) REFERENCES metrics_exchange.company (id);
+
+CREATE TABLE metrics_exchange.alliance
+(
+    id          BIGSERIAL PRIMARY KEY NOT NULL,
+    name        VARCHAR(250),
+    description VARCHAR(1000),
+    version     INTEGER,
+    created_at  TIMESTAMPTZ
+);
+
+CREATE TABLE metrics_exchange.alliance_point
+(
+    id          BIGSERIAL PRIMARY KEY                            NOT NULL,
+    alliance_id BIGINT REFERENCES metrics_exchange.alliance (id) NOT NULL,
+    format      TEXT,
+    status      VARCHAR(250),
+    version     INTEGER,
+    created_at  TIMESTAMPTZ
+);
+
 CREATE TABLE metrics_exchange.company_point
 (
-    id         BIGSERIAL PRIMARY KEY NOT NULL,
-    company_id BIGINT                NOT NULL,
-    format     TEXT,
-    url        TEXT,
-    status     VARCHAR(250),
-    version    INTEGER,
-    created_at TIMESTAMPTZ
+    id                BIGSERIAL PRIMARY KEY NOT NULL,
+    company_id        BIGINT                NOT NULL,
+    format            TEXT,
+    url               TEXT,
+    status            VARCHAR(250),
+    alliance_point_id BIGINT REFERENCES metrics_exchange.alliance_point (id),
+    version           INTEGER,
+    created_at        TIMESTAMPTZ
 );
 
 CREATE TABLE metrics_exchange.transfer_request
@@ -47,38 +72,4 @@ CREATE TABLE metrics_exchange.transfer_request
     decision_comment VARCHAR(500),
     version          INTEGER,
     created_at       TIMESTAMPTZ
-);
-
-CREATE TABLE metrics_exchange.alliance
-(
-    id          BIGSERIAL PRIMARY KEY NOT NULL,
-    name        VARCHAR(250),
-    description VARCHAR(1000),
-    version     INTEGER,
-    created_at  TIMESTAMPTZ
-);
-
-CREATE TABLE metrics_exchange.alliance_company
-(
-    id          BIGSERIAL PRIMARY KEY NOT NULL,
-    alliance_id BIGINT                NOT NULL,
-    company_id  BIGINT                NOT NULL
-);
-
-CREATE TABLE metrics_exchange.alliance_point
-(
-    id          BIGSERIAL PRIMARY KEY NOT NULL,
-    alliance_id BIGINT                NOT NULL,
-    format      TEXT,
-    url         TEXT,
-    status      VARCHAR(250),
-    version     INTEGER,
-    created_at  TIMESTAMPTZ
-);
-
-CREATE TABLE metrics_exchange.alliance_company_points
-(
-    id                BIGSERIAL PRIMARY KEY NOT NULL,
-    alliance_point_id BIGINT                NOT NULL,
-    company_point_id  BIGINT                NOT NULL
 );

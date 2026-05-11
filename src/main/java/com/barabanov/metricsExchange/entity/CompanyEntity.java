@@ -12,10 +12,11 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-@ToString(callSuper = true, exclude = {"owner", "alliances", "points"})
-@EqualsAndHashCode(callSuper = true, exclude = {"owner", "alliances", "points"})
+@ToString(callSuper = true, exclude = {"owner", "points"})
+@EqualsAndHashCode(callSuper = true, exclude = {"owner", "points"})
 @Entity
-public class Company extends AbstractEntity {
+@Table(name = "company")
+public class CompanyEntity extends AbstractEntity {
 
     private String name;
 
@@ -23,11 +24,9 @@ public class Company extends AbstractEntity {
 
     @JoinColumn(name = "owner_user_id")
     @OneToOne(fetch = FetchType.LAZY)
-    private User owner;
+    private UserEntity owner;
 
     @OneToMany(mappedBy = "company")
-    private List<CompanyPoint> points;
+    private List<CompanyPointEntity> points;
 
-    @ManyToMany(mappedBy = "companies")
-    private List<Alliance> alliances;
 }
