@@ -1,8 +1,7 @@
 CREATE
     DATABASE metrics_exchange_db;
 
-\c
-metrics_exchange_db;
+\c metrics_exchange_db;
 
 CREATE SCHEMA metrics_exchange;
 

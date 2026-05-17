@@ -2,6 +2,7 @@ package com.barabanov.metricsExchange.service;
 
 import com.barabanov.metricsExchange.entity.CompanyEntity;
 import com.barabanov.metricsExchange.entity.TransferRequestEntity;
+import com.barabanov.metricsExchange.external.CompanyWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.kafka.KafkaSender;
 import com.barabanov.metricsExchange.kafka.dto.UserPortfolioEvent;
@@ -28,7 +29,7 @@ public class TransferRequestService {
     private final TransferRequestMapper transferRequestMapper;
     private final PredicateDataMapper predicateDataMapper;
     private final KafkaSender kafkaSender;
-    private final CompanyWebService companyWebService;
+    private final CompanyWebClient companyWebClient;
 
 
     @Transactional
@@ -53,7 +54,7 @@ public class TransferRequestService {
                 .orElseThrow(() -> new RuntimeException(
                         String.format("Не удалось найти компанию в которую будет выполняться перенос портфолио для transferId: %s", transferRequestId)));
 
-        companyWebService.triggerUserPortfolioExportEndPoint(importingPortfolioCompany.getTriggerUrlForExportUserPortfolio(), transferRequest.getFromProfileId());
+        companyWebClient.triggerUserPortfolioExportEndPoint(importingPortfolioCompany.getTriggerUrlForExportUserPortfolio(), transferRequest.getFromProfileId());
 
         transferRequest.setComment(transferDecision.getComment());
         transferRequest.setDecision(transferDecision.getDecisionType());

@@ -20,10 +20,10 @@ public class KafkaConsumer {
 
 
     // CLIENT_PORTFOLIO_EVENT.V1
-    @KafkaListener(topics = "kafka-topics.consumer.client-portfolio-topic-name",
+    @KafkaListener(topics = "${kafka-topics.consumer.client-portfolio-topic-name}",
             properties = "spring.json.value.default.type=com.barabanov.metricsExchange.kafka.dto.UserPortfolioEvent",
             containerPostProcessor = CONTAINER_POST_PROCESSOR_COMMON_ERROR_HANDLER_BEAN_NAME,
-            concurrency = "kafka-topics.consumer.client-portfolio-topic-concurrency")
+            concurrency = "${kafka-topics.consumer.client-portfolio-topic-concurrency}")
     public void listenUserPortfolioEvent(UserPortfolioEvent userPortfolioEvent) {
         log.info("Получено сообщение с портфолио по заявке о переносе профиля с id: {}", getTransferRequestId(userPortfolioEvent));
 

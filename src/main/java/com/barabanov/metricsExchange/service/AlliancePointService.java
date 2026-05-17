@@ -2,6 +2,7 @@ package com.barabanov.metricsExchange.service;
 
 import com.barabanov.metricsExchange.entity.AlliancePointEntity;
 import com.barabanov.metricsExchange.entity.CompanyPointEntity;
+import com.barabanov.metricsExchange.external.UserMetricsWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointCreateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointPageRequest;
@@ -40,7 +41,7 @@ public class AlliancePointService {
     private final ExecutorService userMetricsRequestsExecutorService;
     @Value("${user-metrics-request.passed-parameters:usrLogin, usrEmail}")
     private final Set<String> userMetricsRqPassedParameters;
-    private final UserMetricsWebService userMetricsWebService;
+    private final UserMetricsWebClient userMetricsWebClient;
     private final AlliancePointMapper alliancePointMapper;
     private final PredicateDataMapper predicateDataMapper;
     private final AlliancePointRepository alliancePointRepository;
@@ -65,7 +66,7 @@ public class AlliancePointService {
         List<Future<String>> userMetricFutures = new ArrayList<>();
         for (CompanyPointEntity companyPoint : alliancePoint.getCompanyPoints())
             userMetricFutures.add(userMetricsRequestsExecutorService.submit(()
-                    -> userMetricsWebService.getUserMetricsFrom(companyPoint.getUrl(), parametersForUserMetricsRq)));
+                    -> userMetricsWebClient.getUserMetricsFrom(companyPoint.getUrl(), parametersForUserMetricsRq)));
 
         return UserMetricsDto.builder()
                 .metrics(userMetricFutures.stream()

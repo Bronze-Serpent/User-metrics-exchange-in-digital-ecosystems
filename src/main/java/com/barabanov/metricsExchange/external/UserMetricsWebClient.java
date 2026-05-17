@@ -1,4 +1,4 @@
-package com.barabanov.metricsExchange.service;
+package com.barabanov.metricsExchange.external;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class UserMetricsWebService {
+public class UserMetricsWebClient {
 
     private final WebClient webClient; // TODO: Всего один webClient. Все запросы будут через него? Он не блокирется пока не будет получен запрос и может выполнять другие запросы?
 

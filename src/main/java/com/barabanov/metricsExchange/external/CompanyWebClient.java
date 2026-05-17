@@ -1,4 +1,4 @@
-package com.barabanov.metricsExchange.service;
+package com.barabanov.metricsExchange.external;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class CompanyWebService {
+public class CompanyWebClient {
 
     private final WebClient webClient;
     @Value("app.portfolio-exchange.path:/portfolio")
