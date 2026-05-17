@@ -1,6 +1,6 @@
 package com.barabanov.metricsExchange.interfaces.rest.dto;
 
-import com.barabanov.metricsExchange.entity.TransferDecisionType;
+import com.barabanov.metricsExchange.entity.TransferDecision;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +17,7 @@ public class TransferFilter {
     Long id;
     String fromProfileId;
     String toProfileId;
-    List<TransferDecisionType> decisions;
+    List<TransferDecision> decisions;
     Long fromCompanyId;
     Long toCompanyId;
 }

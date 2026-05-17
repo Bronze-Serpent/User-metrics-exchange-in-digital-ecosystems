@@ -34,8 +34,8 @@ public class TransferRequestController {
 
     // Рест на вынесение решения по заявке
     @PostMapping("/transfer-request/{transferRequestId}/decision")
-    public TransferRqDto makeTransferRqDecision(@PathVariable Long transferRequestId, TransferDecision transferDecision) {
-        return transferRequestService.makeTransferRequestDecision(transferRequestId, transferDecision);
+    public TransferRqDto makeTransferRqDecision(@PathVariable Long transferRequestId, TransferDecisionDto transferDecisionDto) {
+        return transferRequestService.makeTransferRequestDecision(transferRequestId, transferDecisionDto);
     }
 
 

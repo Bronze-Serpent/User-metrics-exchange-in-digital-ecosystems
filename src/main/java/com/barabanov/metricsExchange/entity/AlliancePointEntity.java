@@ -30,7 +30,6 @@ public class AlliancePointEntity extends AbstractEntity {
     @JoinColumn(name = "alliance_id")
     private AllianceEntity alliance;
 
-    //TODO: можно ли так указывать по сути дефолтное значени? Для новой сущности так буде работать, да. А для сущности которую достали из БД?
     @Builder.Default
     @OneToMany(mappedBy = "alliancePoint")
     private Set<CompanyPointEntity> companyPoints = new HashSet<>();

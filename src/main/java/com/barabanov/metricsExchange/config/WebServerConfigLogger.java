@@ -2,8 +2,8 @@ package com.barabanov.metricsExchange.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.http11.AbstractHttp11Protocol;
-import org.springframework.boot.tomcat.TomcatWebServer;
-import org.springframework.boot.web.server.context.WebServerInitializedEvent;
+import org.springframework.boot.web.context.WebServerInitializedEvent;
+import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 

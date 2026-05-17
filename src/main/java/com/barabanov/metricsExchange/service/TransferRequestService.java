@@ -2,6 +2,7 @@ package com.barabanov.metricsExchange.service;
 
 import com.barabanov.metricsExchange.entity.CompanyEntity;
 import com.barabanov.metricsExchange.entity.TransferRequestEntity;
+import com.barabanov.metricsExchange.entity.TransferStatus;
 import com.barabanov.metricsExchange.external.CompanyWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.kafka.KafkaSender;
@@ -18,6 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+
+import static com.barabanov.metricsExchange.entity.TransferDecision.ACCEPT;
+import static com.barabanov.metricsExchange.entity.TransferStatus.CLOSED;
+import static com.barabanov.metricsExchange.entity.TransferStatus.DECISION_PROCESSING;
 
 
 @Slf4j
@@ -45,20 +50,24 @@ public class TransferRequestService {
     }
 
 
-    @Transactional //TODO: сделать transactionalOutbox для триггера выгрузки
-    public TransferRqDto makeTransferRequestDecision(Long transferRequestId, TransferDecision transferDecision) {
+    public TransferRqDto makeTransferRequestDecision(Long transferRequestId, TransferDecisionDto transferDecisionDto) {
         TransferRequestEntity transferRequest = transferRequestRepository.findById(transferRequestId)
                 .orElseThrow(() -> new RuntimeException(
                         String.format("Не удалось найти заявку на перенос портфолио с Id: %s", transferRequestId)));
-        CompanyEntity importingPortfolioCompany = Optional.ofNullable(transferRequest.getToCompany())
-                .orElseThrow(() -> new RuntimeException(
-                        String.format("Не удалось найти компанию в которую будет выполняться перенос портфолио для transferId: %s", transferRequestId)));
 
-        companyWebClient.triggerUserPortfolioExportEndPoint(importingPortfolioCompany.getTriggerUrlForExportUserPortfolio(), transferRequest.getFromProfileId());
+        switch (transferDecisionDto.getDecision()) {
+            case ACCEPT -> {
+                transferRequest.setStatus(DECISION_PROCESSING);
+                CompanyEntity importingPortfolioCompany = Optional.ofNullable(transferRequest.getToCompany())
+                        .orElseThrow(() -> new RuntimeException(
+                                String.format("Не удалось найти компанию в которую будет выполняться перенос портфолио для transferId: %s", transferRequestId)));
 
-        transferRequest.setComment(transferDecision.getComment());
-        transferRequest.setDecision(transferDecision.getDecisionType());
+                companyWebClient.triggerUserPortfolioExportEndPoint(importingPortfolioCompany.getTriggerUrlForExportUserPortfolio(), transferRequest.getFromProfileId());
+            }
+            case REJECT -> transferRequest.setStatus(CLOSED);
+        }
 
+        transferRequestMapper.mergeUpdateToTransferEntity(transferDecisionDto, transferRequest);
         return transferRequestMapper.mapToTransferRqDto(transferRequestRepository.save(transferRequest));
     }
 
@@ -82,9 +91,7 @@ public class TransferRequestService {
     }
 
 
-    // TODO: Сделать всё же решения и статусы по заявкам. Тут можно было бы двигать статус, а решение уже конечное, ACCPT
-    //  + нехвататет transactional outbox если появится взаимодействие с БД.
-    //  Если же БД не будет необходимо продумать логику коммита оффсета только в случае успешной отправки в kafka
+    @Transactional
     public void handleUserPortfolioEvent(UserPortfolioEvent userPortfolioEvent) {
         Long transferRequestId = userPortfolioEvent.getTransferRequestId();
 
@@ -94,6 +101,8 @@ public class TransferRequestService {
         String userProfileImportTopicName = Optional.ofNullable(transferRequest.getToCompany())
                 .map(CompanyEntity::getUserProfileImportTopicName)
                 .orElseThrow(() -> new RuntimeException(String.format("Не удалось определить топик для отправки портфолио по заявке на перенос с Id: %s", transferRequestId)));
+        transferRequest.setStatus(CLOSED);
+        transferRequestRepository.save(transferRequest);
 
         kafkaSender.sendUserPortfolio(userProfileImportTopicName, UserPortfolioEvent.builder()
                 .transferRequestId(transferRequestId)
@@ -101,5 +110,6 @@ public class TransferRequestService {
                 .profileId(transferRequest.getToProfileId())
                 .build());
     }
+
 }
 

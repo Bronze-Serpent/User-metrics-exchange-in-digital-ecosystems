@@ -10,7 +10,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AlliancePointCreateDto {
+
     String format;
     Long allianceId;
-    //TODO: при создании проставить статус и проверить что у точки компании статус тоже проставляется
 }

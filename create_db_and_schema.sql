@@ -73,6 +73,7 @@ CREATE TABLE metrics_exchange.transfer_request
     to_profile_id    VARCHAR(250)                                    NOT NULL,
     comment          VARCHAR(500),
     decision         VARCHAR(50),
+    status           VARCHAR(50),
     decision_comment VARCHAR(500),
     version          INTEGER,
     created_at       TIMESTAMPTZ

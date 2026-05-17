@@ -1,5 +1,5 @@
 package com.barabanov.metricsExchange.entity;
 
-public enum TransferDecisionType {
+public enum TransferDecision {
     ACCEPT, REJECT
 }

@@ -1,7 +1,9 @@
 package com.barabanov.metricsExchange.service;
 
+import com.barabanov.metricsExchange.entity.AllianceEntity;
 import com.barabanov.metricsExchange.entity.AlliancePointEntity;
 import com.barabanov.metricsExchange.entity.CompanyPointEntity;
+import com.barabanov.metricsExchange.entity.PointStatus;
 import com.barabanov.metricsExchange.external.UserMetricsWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointCreateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
@@ -10,6 +12,7 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
 import com.barabanov.metricsExchange.mapper.AlliancePointMapper;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
 import com.barabanov.metricsExchange.repository.AlliancePointRepository;
+import com.barabanov.metricsExchange.repository.AllianceRepository;
 import com.barabanov.metricsExchange.repository.CompanyPointRepository;
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -30,14 +33,11 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 
-//TODO: ещё всю кафку реализовать
-
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class AlliancePointService {
 
-    //TODO: сконфигурировать это
     private final ExecutorService userMetricsRequestsExecutorService;
     @Value("${user-metrics-request.passed-parameters:usrLogin, usrEmail}")
     private final Set<String> userMetricsRqPassedParameters;
@@ -45,6 +45,7 @@ public class AlliancePointService {
     private final AlliancePointMapper alliancePointMapper;
     private final PredicateDataMapper predicateDataMapper;
     private final AlliancePointRepository alliancePointRepository;
+    private final AllianceRepository allianceRepository;
     private final TransactionTemplate transactionTemplate;
     private final CompanyPointRepository companyPointRepository;
 
@@ -91,6 +92,10 @@ public class AlliancePointService {
     @Transactional
     public AlliancePointDto createAlliancePoint(AlliancePointCreateDto alliancePointCreateDto) {
         AlliancePointEntity creatingAlliancePoint = alliancePointMapper.mapToEntity(alliancePointCreateDto);
+        creatingAlliancePoint.setStatus(PointStatus.NEW);
+        AllianceEntity alliance = allianceRepository.findById(alliancePointCreateDto.getAllianceId())
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти альянс с id: %s", alliancePointCreateDto.getAllianceId())));
+        creatingAlliancePoint.setAlliance(alliance);
 
         return alliancePointMapper.mapToAlliancePointDto(alliancePointRepository.save(creatingAlliancePoint));
     }
@@ -130,7 +135,6 @@ public class AlliancePointService {
     }
 
 
-    //TODO: сделать флаг позволяет ли выгружать компания портфолио о поле для сохранения урла для вызова выгрузки в кафку портфолио. Вызывать эту функцию у компании в случае сли приняли решение ACCEPT
     @Transactional
     public AlliancePointDto addCompanyPointFor(Long alliancePointId, Long companyPointId) {
         AlliancePointEntity alliancePoint = alliancePointRepository.findById(alliancePointId)

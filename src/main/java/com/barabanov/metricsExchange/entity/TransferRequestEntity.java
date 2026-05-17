@@ -23,7 +23,10 @@ public class TransferRequestEntity extends AbstractEntity {
     private String comment;
 
     @Enumerated(EnumType.STRING)
-    private TransferDecisionType decision;
+    private TransferDecision decision;
+
+    @Enumerated(EnumType.STRING)
+    private TransferStatus status;
 
     private String decisionComment;
 
