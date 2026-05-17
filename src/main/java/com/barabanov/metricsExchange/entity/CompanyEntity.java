@@ -22,6 +22,12 @@ public class CompanyEntity extends AbstractEntity {
 
     private String description;
 
+    private Boolean suppUserProfileExchange;
+
+    private String userProfileImportTopicName;
+
+    private String triggerUrlForExportUserPortfolio;
+
     @JoinColumn(name = "owner_user_id")
     @OneToOne(fetch = FetchType.LAZY)
     private UserEntity owner;

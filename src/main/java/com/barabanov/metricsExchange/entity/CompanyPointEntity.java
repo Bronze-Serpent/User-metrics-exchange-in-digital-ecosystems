@@ -19,6 +19,12 @@ import java.util.List;
 @Table(name = "company_point")
 public class CompanyPointEntity extends AbstractEntity {
 
+    /**
+     * Можно хранить host в Company, а path в CompanyPoint, но тогда придётся получать информацию и о компании при запросе метрик.
+     * Чтобы этого не делать хранится всё вместе
+     *
+     * TODO: рассмотреть вариант разнесения этого и перехода на нативный запрос при получении метрик + возможно, кэш этого запроса
+     */
     private String url;
 
     private String format;

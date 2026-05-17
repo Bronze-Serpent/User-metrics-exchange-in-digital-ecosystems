@@ -34,6 +34,7 @@ public interface PredicateDataMapper {
 
         return QPredicates.builder()
                 .add(companyFilter.getCompanyNameSubstring(), companyEntity.name::contains)
+                .add(companyFilter.getSuppUserProfileExchange(), companyEntity.suppUserProfileExchange::eq)
                 .build();
     }
 

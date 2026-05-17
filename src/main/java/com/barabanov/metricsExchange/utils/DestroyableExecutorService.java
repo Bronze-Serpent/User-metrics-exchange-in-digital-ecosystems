@@ -1,4 +1,4 @@
-package com.barabanov.metricsExchange.helper;
+package com.barabanov.metricsExchange.utils;
 
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;

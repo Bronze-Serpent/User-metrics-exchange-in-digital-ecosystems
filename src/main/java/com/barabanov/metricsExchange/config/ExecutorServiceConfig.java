@@ -1,6 +1,6 @@
 package com.barabanov.metricsExchange.config;
 
-import com.barabanov.metricsExchange.helper.DestroyableExecutorService;
+import com.barabanov.metricsExchange.utils.DestroyableExecutorService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

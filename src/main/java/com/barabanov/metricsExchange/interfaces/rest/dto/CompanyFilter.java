@@ -11,4 +11,5 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CompanyFilter {
     String companyNameSubstring;
+    Boolean suppUserProfileExchange;
 }

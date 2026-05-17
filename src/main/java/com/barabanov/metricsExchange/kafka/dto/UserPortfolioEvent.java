@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UserPortfolioEvent {
     private Long transferRequestId;
+    private String profileId;
     private UserPortfolio userPortfolio;
 }
-// TODO: а отправлять transferId, toProfileId, userPortfolio

@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 
 // TODO: поправить в диаграммах Происходит не совсем добавление компании в альянс, а скорее подключение к одному из поинтов альянса
-//TODO:продумать как как обращаться к поинтам и получать из них инфу. Мб не по отдельному url, а вставить в путь айди точки альянса
 @Slf4j
 @RequestMapping("/alliance-exchange-metrics")
 @RequiredArgsConstructor

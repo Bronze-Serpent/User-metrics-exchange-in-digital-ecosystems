@@ -1,6 +1,8 @@
-CREATE DATABASE metrics_exchange_db;
+CREATE
+    DATABASE metrics_exchange_db;
 
-\c metrics_exchange_db;
+\c
+metrics_exchange_db;
 
 CREATE SCHEMA metrics_exchange;
 
@@ -17,12 +19,15 @@ CREATE TABLE metrics_exchange.user
 
 CREATE TABLE metrics_exchange.company
 (
-    id            BIGSERIAL PRIMARY KEY NOT NULL,
-    name          VARCHAR(250),
-    description   VARCHAR(1000),
-    owner_user_id BIGINT REFERENCES metrics_exchange.user (id),
-    version       INTEGER,
-    created_at    TIMESTAMPTZ
+    id                                    BIGSERIAL PRIMARY KEY NOT NULL,
+    name                                  VARCHAR(250),
+    description                           VARCHAR(1000),
+    supp_user_profile_exchange            BOOLEAN               NOT NULL,
+    user_profile_import_topic_name        VARCHAR(250),
+    trigger_url_for_export_user_portfolio VARCHAR(250),
+    owner_user_id                         BIGINT REFERENCES metrics_exchange.user (id),
+    version                               INTEGER,
+    created_at                            TIMESTAMPTZ
 );
 
 ALTER TABLE metrics_exchange.user
