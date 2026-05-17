@@ -5,12 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserPortfolio {
-    private List<CustomerReview> reviews;
+public class UserPortfolioEvent {
+    private Long transferRequestId;
+    private UserPortfolio userPortfolio;
 }
+// TODO: а отправлять transferId, toProfileId, userPortfolio

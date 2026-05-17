@@ -1,3 +1,5 @@
+server.tomcat.threads.max: 100
+
 spring:
   application.name: user-metrics-exchange-in-digital-ecosystems
   datasource:
@@ -5,6 +7,7 @@ spring:
     username: postgres
     password: pass
     hikari:
+      maximum-pool-size: 15
       schema: metrics_exchange
   jpa:
     hibernate:
@@ -25,3 +28,7 @@ kafka-topics:
   consumer:
     client-portfolio-topic-name: CLIENT_PORTFOLIO_EVENT.V1
     client-portfolio-topic-concurrency: 1
+
+app:
+  user-metrics-requests:
+    thread-num: 250

@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Setter
@@ -27,6 +30,8 @@ public class AlliancePointEntity extends AbstractEntity {
     @JoinColumn(name = "alliance_id")
     private AllianceEntity alliance;
 
+    //TODO: можно ли так указывать по сути дефолтное значени? Для новой сущности так буде работать, да. А для сущности которую достали из БД?
+    @Builder.Default
     @OneToMany(mappedBy = "alliancePoint")
-    private List<CompanyPointEntity> companyPoints;
+    private Set<CompanyPointEntity> companyPoints = new HashSet<>();
 }

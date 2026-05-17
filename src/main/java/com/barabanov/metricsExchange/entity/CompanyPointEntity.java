@@ -33,4 +33,16 @@ public class CompanyPointEntity extends AbstractEntity {
     @JoinColumn(name = "alliance_point_id")
     @ManyToOne
     private AlliancePointEntity alliancePoint;
+
+
+    //TODO: а так можно делать? У новой сущности это поле будет не null, да. А при запросе из БД у хибера? Хотя из-за контракта прокси думаю можно
+    public void setAlliancePoint(AlliancePointEntity alliancePoint) {
+        if (alliancePoint != null)
+            alliancePoint.getCompanyPoints().add(this);
+
+        if (this.alliancePoint != null && !this.alliancePoint.equals(alliancePoint))
+            this.alliancePoint.getCompanyPoints().remove(this);
+
+        this.alliancePoint = alliancePoint;
+    }
 }

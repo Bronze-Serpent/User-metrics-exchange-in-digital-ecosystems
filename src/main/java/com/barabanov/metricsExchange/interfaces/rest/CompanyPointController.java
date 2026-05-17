@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 
-//TODO: Точка альянса состоит из точек компании. И для того чтобы получить все данные по точкам альянса нужно пройтись по всем точкам компаний
 @Slf4j
 @RequiredArgsConstructor
 @RestController

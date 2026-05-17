@@ -2,6 +2,7 @@ package com.barabanov.metricsExchange.service;
 
 import com.barabanov.metricsExchange.entity.TransferRequestEntity;
 import com.barabanov.metricsExchange.interfaces.rest.dto.*;
+import com.barabanov.metricsExchange.kafka.dto.UserPortfolioEvent;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
 import com.barabanov.metricsExchange.mapper.TransferRequestMapper;
 import com.barabanov.metricsExchange.repository.TransferRequestRepository;
@@ -10,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +66,10 @@ public class TransferRequestService {
                 .totalElements(transfersPage.getTotalElements())
                 .totalPages(transfersPage.getTotalPages())
                 .build();
+    }
+
+    public void handleUserPortfolioEvent(UserPortfolioEvent userPortfolioEvent) {
+
     }
 }
 

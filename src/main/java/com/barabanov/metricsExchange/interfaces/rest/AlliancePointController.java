@@ -5,9 +5,11 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointPageRequest;
 import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
 import com.barabanov.metricsExchange.service.AlliancePointService;
+import com.barabanov.metricsExchange.service.UserMetricsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -67,9 +69,9 @@ public class AlliancePointController {
 
 
     // Рест на получение данных из альянса
-    @GetMapping("/alliance-point/{alliancePointId}/metrics")
-    public void getUserMetrics(@PathVariable Long alliancePointId) {
-        // TODO: реализовать
+    @GetMapping("/alliance-points/{alliancePointId}/metrics")
+    public UserMetricsDto getUserMetrics(@PathVariable Long alliancePointId, @RequestParam MultiValueMap<String, String> requesterParameters) {
+        return alliancePointService.getUserMetricsFrom(alliancePointId, requesterParameters);
     }
 
 
