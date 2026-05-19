@@ -50,6 +50,7 @@ public class TransferRequestService {
     }
 
 
+    @Transactional
     public TransferRqDto makeTransferRequestDecision(Long transferRequestId, TransferDecisionDto transferDecisionDto) {
         TransferRequestEntity transferRequest = transferRequestRepository.findById(transferRequestId)
                 .orElseThrow(() -> new RuntimeException(

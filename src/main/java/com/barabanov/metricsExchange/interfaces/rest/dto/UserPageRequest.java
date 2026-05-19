@@ -1,8 +1,6 @@
 package com.barabanov.metricsExchange.interfaces.rest.dto;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 

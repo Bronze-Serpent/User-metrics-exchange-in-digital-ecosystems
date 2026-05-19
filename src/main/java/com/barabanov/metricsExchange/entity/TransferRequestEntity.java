@@ -37,4 +37,7 @@ public class TransferRequestEntity extends AbstractEntity {
     @JoinColumn(name = "to_company_id")
     @ManyToOne(fetch = FetchType.LAZY)
     private CompanyEntity toCompany;
+
+    @ManyToOne
+    private UserEntity user; //TODO: Доделать т.к. заявки то принадлежат пользователям
 }

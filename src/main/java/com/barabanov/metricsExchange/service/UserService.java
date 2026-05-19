@@ -35,14 +35,11 @@ public class UserService {
     @Transactional
     public UserDto createUser(CreateUserDto createUserDto) {
         UserEntity creatingUser = userMapper.mapToEntity(createUserDto);
-        creatingUser.setLinkedCompany(Optional.ofNullable(createUserDto.getLinkedCompanyId())
-                .flatMap(companyRepository::findById)
-                .orElse(null));
 
         return userMapper.toUserDto(userRepository.save(creatingUser));
     }
 
-
+    //TODO: подумать как линковать компанию и стоит ли это делать (даже с учетом админов) при создании пользователей
     @Transactional(readOnly = true)
     public PageResponse<UserDto> getUserPage(UserPageRequest userPageRequest) {
         Predicate predicate = predicateDataMapper.mapUserFilterToPredicate(userPageRequest.getUserFilter());

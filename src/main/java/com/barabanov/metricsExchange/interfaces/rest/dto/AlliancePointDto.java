@@ -1,6 +1,5 @@
 package com.barabanov.metricsExchange.interfaces.rest.dto;
 
-import com.barabanov.metricsExchange.entity.AllianceEntity;
 import com.barabanov.metricsExchange.entity.PointStatus;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -17,6 +16,5 @@ public class AlliancePointDto {
     Long id;
     String format;
     PointStatus status;
-    AllianceEntity alliance;
     List<CompanyPointDto> companyPoints;
 }

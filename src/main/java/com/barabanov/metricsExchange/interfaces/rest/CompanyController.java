@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("/Company-exchange-metrics")
+@RequestMapping("/company-exchange-metrics")
 @RestController
 public class CompanyController {
 

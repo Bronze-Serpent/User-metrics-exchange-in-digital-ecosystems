@@ -1,5 +1,5 @@
 # для подключения кафка контейнеров к локальной машине не забыть поправить host файл, ведь подключения будут с таким же хостом, что и в KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
-
+# Нужно в hosts добавить 127.0.0.1		kafka
 version: "3.3"
 #name: user-metrics-exchange-in-digital-ecosystems - не поддерживается в версии 3.3
 services:

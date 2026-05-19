@@ -13,7 +13,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 
-// TODO: поправить в диаграммах Происходит не совсем добавление компании в альянс, а скорее подключение к одному из поинтов альянса
 @Slf4j
 @RequestMapping("/alliance-exchange-metrics")
 @RequiredArgsConstructor
@@ -25,7 +24,7 @@ public class AlliancePointController {
 
     // Рест на создание новой связи (точки) в альянсе
     @PostMapping("/alliance-point/create")
-    public AlliancePointDto createAlliancePoint(AlliancePointCreateDto alliancePointCreateDto) {
+    public AlliancePointDto createAlliancePoint(@RequestBody AlliancePointCreateDto alliancePointCreateDto) {
         return alliancePointService.createAlliancePoint(alliancePointCreateDto);
     }
 

@@ -10,8 +10,12 @@ spring:
       maximum-pool-size: 15
       schema: metrics_exchange
   jpa:
+    properties:
+      hibernate:
+        default_schema: metrics_exchange
     hibernate:
       ddl-auto: validate
+      # TODO: с схемой хикари описать различия
 
   kafka:
     producer:

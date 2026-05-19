@@ -75,6 +75,7 @@ CREATE TABLE metrics_exchange.transfer_request
     decision         VARCHAR(50),
     status           VARCHAR(50),
     decision_comment VARCHAR(500),
+    user_id          BIGINT REFERENCES metrics_exchange.user (id)    NOT NULL,
     version          INTEGER,
     created_at       TIMESTAMPTZ
 );

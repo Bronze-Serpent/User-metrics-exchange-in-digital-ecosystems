@@ -13,9 +13,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class CompanyWebClient {
 
     private final WebClient webClient;
-    @Value("app.portfolio-exchange.path:/portfolio")
+    @Value("${app.portfolio-exchange.path:/portfolio}")
     private final String path;
-    @Value("app.portfolio-exchange.company-profile-id-parameter-name:profileId")
+    @Value("${app.portfolio-exchange.company-profile-id-parameter-name:profileId}")
     private final String companyProfileIdParameterName;
 
     public void triggerUserPortfolioExportEndPoint(String host, String companyProfileId) {

@@ -47,7 +47,7 @@ public class CompanyPointController {
     // Рест на просмотр списка всех точек компании для предоставления метрик с пагинацией
     // Рест на просмотр списка точек компаний для конкретной точки альянса
     @PostMapping("/company-points")
-    public PageResponse<CompanyPointDto> getPointsPage(CompanyPointPageRequest companyPointPageRequest) {
+    public PageResponse<CompanyPointDto> getPointsPage(@RequestBody CompanyPointPageRequest companyPointPageRequest) {
 
         log.info("Получен запрос на получение набора точек компаний");
         return companyPointService.getCompanyPointPage(companyPointPageRequest);
@@ -61,5 +61,4 @@ public class CompanyPointController {
         return companyPointService.updateCompanyPoint(companyPointId, companyPointUpdateDto);
     }
 
-    //TODO: поправить в диаграммах. Владелец компании может точкам просто статус проставлять (выключать и включать их)
 }

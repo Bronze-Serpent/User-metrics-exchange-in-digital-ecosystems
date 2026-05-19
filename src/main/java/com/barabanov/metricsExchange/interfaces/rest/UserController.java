@@ -44,7 +44,7 @@ public class UserController {
     // Рест на просмотр всех администраторов компании с пагинацией
     // Рест на получение списка всех акков с ролью админа в приложении
     @PostMapping("/users")
-    public PageResponse<UserDto> getUsers(UserPageRequest userPageRequest) {
+    public PageResponse<UserDto> getUsers(@RequestBody UserPageRequest userPageRequest) {
 
         log.info("Получен запрос на получение набора пользователей");
         return userService.getUserPage(userPageRequest);
