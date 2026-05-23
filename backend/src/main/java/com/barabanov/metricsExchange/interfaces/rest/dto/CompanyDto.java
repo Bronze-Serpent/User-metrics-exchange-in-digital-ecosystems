@@ -9,13 +9,9 @@ import lombok.experimental.FieldDefaults;
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class CreateTransferRqDto {
-
-    String fromProfileId;
-    String toProfileId;
-    String comment;
-    String decision;
-    String decisionComment;
-    Long fromCompanyId;
-    Long toCompanyId;
+public class CompanyDto {
+    Long id;
+    String name;
+    String description;
+    Long ownerUserId;
 }

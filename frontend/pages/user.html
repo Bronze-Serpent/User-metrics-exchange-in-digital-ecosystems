@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Страница пользователя — Metrics Exchange</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     Header
+     ============================================================ -->
+<header class="page-header">
+  <div class="container">
+    <a href="../index.html" class="btn btn-ghost">← Назад</a>
+    <span class="page-title">👤 Страница пользователя</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     Main Content
+     ============================================================ -->
+<main class="container">
+
+  <!-- Tabs Navigation -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="create-request">📝 Создать заявку</button>
+    <button class="tab-btn"        data-tab="companies">🏢 Компании</button>
+    <button class="tab-btn"        data-tab="transfers">📋 Мои заявки</button>
+  </div>
+
+  <!-- ========================
+       Tab 1: Create Transfer Request
+       ======================== -->
+  <div class="tab-panel active" id="tab-create-request">
+    <div class="card">
+      <h2 class="card-title">Создание заявки на перенос рейтинга профиля</h2>
+
+      <form id="createRequestForm" novalidate>
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label class="form-label" for="fromCompanyId">Компания-источник *</label>
+            <select id="fromCompanyId" class="form-control" required>
+              <option value="">— загрузка списка... —</option>
+            </select>
+            <span class="hint">Компания, из которой переносится рейтинг</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="toCompanyId">Компания-назначение *</label>
+            <select id="toCompanyId" class="form-control" required>
+              <option value="">— загрузка списка... —</option>
+            </select>
+            <span class="hint">Компания, в которую переносится рейтинг</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="fromProfileId">ID профиля-источника *</label>
+            <input type="text" id="fromProfileId" class="form-control"
+                   placeholder="Идентификатор профиля в компании-источнике"
+                   required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="toProfileId">ID профиля-назначения *</label>
+            <input type="text" id="toProfileId" class="form-control"
+                   placeholder="Идентификатор профиля в компании-назначении"
+                   required />
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label" for="transferComment">Комментарий</label>
+            <textarea id="transferComment" class="form-control" rows="3"
+                      placeholder="Опишите причину или дополнительные сведения..."></textarea>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="submitRequestBtn" class="btn btn-primary">
+            Отправить заявку
+          </button>
+          <div id="createRequestAlert"></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================
+       Tab 2: Companies List
+       ======================== -->
+  <div class="tab-panel" id="tab-companies">
+    <div class="card">
+      <h2 class="card-title">Список компаний</h2>
+
+      <!-- Toolbar: search + sort -->
+      <div class="toolbar">
+        <input type="text" id="companyNameFilter" class="form-control"
+               placeholder="Поиск по названию..." style="max-width: 260px;" />
+
+        <select id="companySortOrder" class="form-control" style="width: auto;">
+          <option value="ASC">Сортировка: A → Z</option>
+          <option value="DESC">Сортировка: Z → A</option>
+        </select>
+
+        <button id="companiesSearchBtn" class="btn btn-primary btn-sm">Найти</button>
+        <button id="companiesResetBtn"  class="btn btn-secondary btn-sm">Сбросить</button>
+
+        <span class="toolbar-spacer"></span>
+        <span id="companiesCountInfo" class="page-info"></span>
+      </div>
+
+      <!-- Table -->
+      <div id="companiesContent">
+        <div class="loading">Загрузка компаний...</div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="companiesPagination"></div>
+    </div>
+  </div>
+
+  <!-- ========================
+       Tab 3: Transfer Requests List
+       ======================== -->
+  <div class="tab-panel" id="tab-transfers">
+    <div class="card">
+      <h2 class="card-title">Мои заявки на перенос рейтинга</h2>
+      <p class="hint" style="margin-bottom: 16px;">
+        Список отсортирован по дате создания — новые заявки отображаются сверху.
+        Нажмите на строку для просмотра подробностей.
+      </p>
+
+      <!-- Table -->
+      <div id="transfersContent">
+        <div class="loading">Загрузка заявок...</div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="transfersPagination"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     Modal: Transfer Request Detail
+     ============================================================ -->
+<div class="modal-overlay" id="transferDetailModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">Подробная информация о заявке</h3>
+      <button class="modal-close" id="closeModalBtn" aria-label="Закрыть">×</button>
+    </div>
+    <div id="modalContent">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Scripts
+     ============================================================ -->
+<script src="../js/api.js"></script>
+<script>
+  /* ============================================================
+     State
+     ============================================================ */
+  var state = {
+    /* Map id → name для всех компаний (загружается однажды) */
+    companiesMap: {},
+    allCompaniesLoaded: false,
+
+    /* Состояние вкладки "Компании" */
+    companiesPage:   0,
+    companiesTotalPages: 0,
+    companiesTotalElements: 0,
+    companiesPageSize: 10,
+    companiesNameFilter: '',
+    companiesSortOrder: 'ASC',
+
+    /* Состояние вкладки "Заявки" */
+    transfersPage:  0,
+    transfersTotalPages: 0,
+    transfersPageSize: 10
+  };
+
+  /* ============================================================
+     Utility helpers
+     ============================================================ */
+
+  /** Экранирует HTML-спецсимволы для безопасной вставки в innerHTML */
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /** Возвращает имя компании по id или заглушку */
+  function companyName(id) {
+    if (!id) return '—';
+    return state.companiesMap[id] ? esc(state.companiesMap[id]) : 'Компания #' + id;
+  }
+
+  /** Бейдж для поля decision */
+  function decisionBadge(decision) {
+    if (!decision) return '<span class="badge badge-default">—</span>';
+    var map = {
+      ACCEPT: ['badge-accept',  'Принята'],
+      REJECT: ['badge-reject',  'Отклонена']
+    };
+    var pair = map[decision] || ['badge-default', esc(decision)];
+    return '<span class="badge ' + pair[0] + '">' + pair[1] + '</span>';
+  }
+
+  /** Бейдж для поля status */
+  function statusBadge(status) {
+    if (!status) return '<span class="badge badge-default">—</span>';
+    var map = {
+      CLOSED:              ['badge-default', 'Закрыта'],
+      DECISION_PROCESSING: ['badge-process', 'Обрабатывается']
+    };
+    var pair = map[status] || ['badge-default', esc(status)];
+    return '<span class="badge ' + pair[0] + '">' + pair[1] + '</span>';
+  }
+
+  /** Показывает/скрывает inline-алерт */
+  function showAlert(containerId, message, type) {
+    var el = document.getElementById(containerId);
+    if (!message) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+  }
+
+  /* ============================================================
+     Pagination renderer
+     Вместо передачи функции передаём строку с именем глобальной
+     функции — это позволяет использовать onclick в innerHTML.
+     ============================================================ */
+  function renderPagination(containerId, currentPage, totalPages, handlerName) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+    var prevDisabled = currentPage === 0 ? 'disabled' : '';
+    var nextDisabled = currentPage >= totalPages - 1 ? 'disabled' : '';
+
+    el.innerHTML =
+      '<button class="btn btn-secondary btn-sm" ' + prevDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage - 1) + ')">← Назад</button>' +
+      '<span class="page-info">Страница ' + (currentPage + 1) + ' из ' + totalPages + '</span>' +
+      '<button class="btn btn-secondary btn-sm" ' + nextDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage + 1) + ')">Вперёд →</button>';
+  }
+
+  /* ============================================================
+     Load companies for dropdowns (run once on page load)
+     ============================================================ */
+  function loadCompaniesForDropdowns() {
+    Api.getAllCompanies()
+      .then(function (response) {
+        var companies = (response && response.data) ? response.data : [];
+        state.allCompaniesLoaded = true;
+
+        /* Populate state.companiesMap */
+        companies.forEach(function (c) {
+          state.companiesMap[c.id] = c.name;
+        });
+
+        /* Build <option> list */
+        var optionsHtml = '<option value="">— Выберите компанию —</option>' +
+          companies.map(function (c) {
+            return '<option value="' + c.id + '">' + esc(c.name) + '</option>';
+          }).join('');
+
+        document.getElementById('fromCompanyId').innerHTML = optionsHtml;
+        document.getElementById('toCompanyId').innerHTML   = optionsHtml;
+      })
+      .catch(function (err) {
+        var errOption = '<option value="">— Ошибка загрузки —</option>';
+        document.getElementById('fromCompanyId').innerHTML = errOption;
+        document.getElementById('toCompanyId').innerHTML   = errOption;
+        console.error('Ошибка загрузки компаний для выпадающих списков:', err);
+      });
+  }
+
+  /* ============================================================
+     Companies tab
+     ============================================================ */
+  function loadCompanies(page) {
+    if (page === undefined) page = 0;
+    state.companiesPage = page;
+
+    document.getElementById('companiesContent').innerHTML =
+      '<div class="loading">Загрузка...</div>';
+    document.getElementById('companiesPagination').innerHTML = '';
+
+    Api.getCompanies({
+      pageNumber: page,
+      pageSize:   state.companiesPageSize,
+      nameFilter: state.companiesNameFilter,
+      sortOrder:  state.companiesSortOrder
+    })
+    .then(function (response) {
+      var companies = (response && response.data) ? response.data : [];
+      state.companiesTotalPages    = response.totalPages    || 0;
+      state.companiesTotalElements = response.totalElements || 0;
+
+      /* Update companies map with fresh data */
+      companies.forEach(function (c) {
+        state.companiesMap[c.id] = c.name;
+      });
+
+      /* Count info */
+      document.getElementById('companiesCountInfo').textContent =
+        'Найдено: ' + state.companiesTotalElements;
+
+      if (companies.length === 0) {
+        document.getElementById('companiesContent').innerHTML =
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">🏢</div>' +
+            '<p>Компании не найдены</p>' +
+          '</div>';
+        return;
+      }
+
+      var rows = companies.map(function (c) {
+        return '<tr>' +
+          '<td style="width:80px;color:var(--text-muted)">' + esc(c.id) + '</td>' +
+          '<td><strong>' + esc(c.name || '—') + '</strong></td>' +
+          '<td>' + esc(c.description || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="table-wrapper">' +
+          '<table>' +
+            '<thead><tr>' +
+              '<th>ID</th>' +
+              '<th>Название</th>' +
+              '<th>Описание</th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+
+      renderPagination('companiesPagination',
+        state.companiesPage,
+        state.companiesTotalPages,
+        'loadCompanies');
+    })
+    .catch(function (err) {
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки компаний: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  /* Search button */
+  document.getElementById('companiesSearchBtn').addEventListener('click', function () {
+    state.companiesNameFilter = document.getElementById('companyNameFilter').value.trim();
+    state.companiesSortOrder  = document.getElementById('companySortOrder').value;
+    loadCompanies(0);
+  });
+
+  /* Enter in search field */
+  document.getElementById('companyNameFilter').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('companiesSearchBtn').click();
+  });
+
+  /* Sort change */
+  document.getElementById('companySortOrder').addEventListener('change', function () {
+    state.companiesSortOrder = document.getElementById('companySortOrder').value;
+    loadCompanies(0);
+  });
+
+  /* Reset filters */
+  document.getElementById('companiesResetBtn').addEventListener('click', function () {
+    document.getElementById('companyNameFilter').value = '';
+    document.getElementById('companySortOrder').value  = 'ASC';
+    state.companiesNameFilter = '';
+    state.companiesSortOrder  = 'ASC';
+    loadCompanies(0);
+  });
+
+  /* ============================================================
+     Transfer Requests tab
+     ============================================================ */
+  function loadTransfers(page) {
+    if (page === undefined) page = 0;
+    state.transfersPage = page;
+
+    document.getElementById('transfersContent').innerHTML =
+      '<div class="loading">Загрузка...</div>';
+    document.getElementById('transfersPagination').innerHTML = '';
+
+    Api.getTransferRequests({
+      pageNumber: page,
+      pageSize:   state.transfersPageSize
+    })
+    .then(function (response) {
+      var transfers = (response && response.data) ? response.data : [];
+      state.transfersTotalPages = response.totalPages || 0;
+
+      if (transfers.length === 0) {
+        document.getElementById('transfersContent').innerHTML =
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">📋</div>' +
+            '<p>Заявок пока нет</p>' +
+          '</div>';
+        return;
+      }
+
+      var rows = transfers.map(function (t) {
+        return '<tr class="clickable" onclick="openTransferDetail(' + t.id + ')">' +
+          '<td><strong>#' + esc(t.id) + '</strong></td>' +
+          '<td>' + statusBadge(t.status) + '</td>' +
+          '<td>' + decisionBadge(t.decision) + '</td>' +
+          '<td style="color:var(--text-muted)">' + esc(t.createdAt || '—') + '</td>' +
+          '<td>' + companyName(t.fromCompanyId) + '</td>' +
+          '<td>' + companyName(t.toCompanyId) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('transfersContent').innerHTML =
+        '<div class="table-wrapper">' +
+          '<table>' +
+            '<thead><tr>' +
+              '<th>ID</th>' +
+              '<th>Статус</th>' +
+              '<th>Решение</th>' +
+              '<th>Дата создания</th>' +
+              '<th>Из компании</th>' +
+              '<th>В компанию</th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+
+      renderPagination('transfersPagination',
+        state.transfersPage,
+        state.transfersTotalPages,
+        'loadTransfers');
+    })
+    .catch(function (err) {
+      document.getElementById('transfersContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки заявок: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  /* ============================================================
+     Transfer Request Detail Modal
+     ============================================================ */
+  function openTransferDetail(id) {
+    document.getElementById('modalTitle').textContent = 'Заявка #' + id;
+    document.getElementById('modalContent').innerHTML =
+      '<div class="loading">Загрузка...</div>';
+    document.getElementById('transferDetailModal').classList.add('open');
+
+    Api.getTransferRequest(id)
+      .then(function (t) {
+        document.getElementById('modalContent').innerHTML =
+          '<div class="detail-grid">' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">ID заявки</div>' +
+              '<div class="detail-value"><strong>#' + esc(t.id) + '</strong></div>' +
+            '</div>' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">Решение</div>' +
+              '<div class="detail-value">' + decisionBadge(t.decision) + '</div>' +
+            '</div>' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">Статус</div>' +
+              '<div class="detail-value">' + statusBadge(t.status) + '</div>' +
+            '</div>' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">Дата создания</div>' +
+              '<div class="detail-value">' + esc(t.createdAt || '—') + '</div>' +
+            '</div>' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">Компания-источник</div>' +
+              '<div class="detail-value">' + companyName(t.fromCompanyId) + '</div>' +
+            '</div>' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">Компания-назначение</div>' +
+              '<div class="detail-value">' + companyName(t.toCompanyId) + '</div>' +
+            '</div>' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">ID профиля-источника</div>' +
+              '<div class="detail-value">' + esc(t.fromProfileId || '—') + '</div>' +
+            '</div>' +
+
+            '<div class="detail-item">' +
+              '<div class="detail-label">ID профиля-назначения</div>' +
+              '<div class="detail-value">' + esc(t.toProfileId || '—') + '</div>' +
+            '</div>' +
+
+            (t.comment ?
+              '<div class="detail-item span-2">' +
+                '<div class="detail-label">Комментарий</div>' +
+                '<div class="detail-value">' + esc(t.comment) + '</div>' +
+              '</div>' : '') +
+
+            (t.decisionComment ?
+              '<div class="detail-item span-2">' +
+                '<div class="detail-label">Комментарий к решению</div>' +
+                '<div class="detail-value">' + esc(t.decisionComment) + '</div>' +
+              '</div>' : '') +
+
+          '</div>';
+      })
+      .catch(function (err) {
+        document.getElementById('modalContent').innerHTML =
+          '<div class="alert alert-error">Ошибка загрузки заявки: ' + esc(err.message) + '</div>';
+      });
+  }
+
+  /* Close modal by button */
+  document.getElementById('closeModalBtn').addEventListener('click', function () {
+    document.getElementById('transferDetailModal').classList.remove('open');
+  });
+
+  /* Close modal by clicking overlay */
+  document.getElementById('transferDetailModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+
+  /* Close modal on Escape */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.getElementById('transferDetailModal').classList.remove('open');
+    }
+  });
+
+  /* ============================================================
+     Create Transfer Request Form
+     ============================================================ */
+  document.getElementById('createRequestForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var btn       = document.getElementById('submitRequestBtn');
+    var fromComp  = document.getElementById('fromCompanyId').value;
+    var toComp    = document.getElementById('toCompanyId').value;
+    var fromProf  = document.getElementById('fromProfileId').value.trim();
+    var toProf    = document.getElementById('toProfileId').value.trim();
+    var comment   = document.getElementById('transferComment').value.trim();
+
+    showAlert('createRequestAlert', '', 'success');
+
+    /* Client-side validation */
+    if (!fromComp) {
+      showAlert('createRequestAlert', 'Выберите компанию-источник.', 'error'); return;
+    }
+    if (!toComp) {
+      showAlert('createRequestAlert', 'Выберите компанию-назначение.', 'error'); return;
+    }
+    if (!fromProf) {
+      showAlert('createRequestAlert', 'Укажите ID профиля-источника.', 'error'); return;
+    }
+    if (!toProf) {
+      showAlert('createRequestAlert', 'Укажите ID профиля-назначения.', 'error'); return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Отправка...';
+
+    Api.createTransferRequest({
+      fromCompanyId: fromComp,
+      toCompanyId:   toComp,
+      fromProfileId: fromProf,
+      toProfileId:   toProf,
+      comment:       comment
+    })
+    .then(function (result) {
+      showAlert('createRequestAlert',
+        '✓ Заявка <strong>#' + esc(result.id) + '</strong> успешно создана!',
+        'success');
+      /* Reset form */
+      document.getElementById('createRequestForm').reset();
+    })
+    .catch(function (err) {
+      showAlert('createRequestAlert', 'Ошибка: ' + esc(err.message), 'error');
+    })
+    .finally(function () {
+      btn.disabled    = false;
+      btn.textContent = 'Отправить заявку';
+    });
+  });
+
+  /* ============================================================
+     Tab switching
+     ============================================================ */
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      /* Update tab buttons */
+      document.querySelectorAll('.tab-btn').forEach(function (b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      /* Update panels */
+      document.querySelectorAll('.tab-panel').forEach(function (p) {
+        p.classList.remove('active');
+      });
+      var panel = document.getElementById('tab-' + btn.dataset.tab);
+      if (panel) panel.classList.add('active');
+
+      /* Load data for the newly activated tab */
+      if (btn.dataset.tab === 'companies') loadCompanies(0);
+      if (btn.dataset.tab === 'transfers') loadTransfers(0);
+    });
+  });
+
+  /* ============================================================
+     Initialization
+     ============================================================ */
+  loadCompaniesForDropdowns();   /* always needed for the form dropdowns */
+  loadCompanies(0);              /* pre-load companies list (first tab is active at start,
+                                    but user may switch quickly, so we load companies too) */
+</script>
+
+</body>
+</html>
