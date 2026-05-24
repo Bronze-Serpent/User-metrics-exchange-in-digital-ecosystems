@@ -12,6 +12,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserFilter {
 
+    Long userId;
+    String userEmailSubstr; //TODO: дописать реализацию для этих фильтров
     Long linkedCompanyId;
     UserRole userRole;
 }

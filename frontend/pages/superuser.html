@@ -8,22 +8,382 @@
 </head>
 <body>
 
-  <header class="page-header">
-    <div class="container">
-      <a href="../index.html" class="btn btn-ghost">← Назад</a>
-      <span class="page-title">🛡️ Страница суперпользователя</span>
-    </div>
-  </header>
+<!-- ============================================================
+     Header
+     ============================================================ -->
+<header class="page-header">
+  <div class="container">
+    <a href="../index.html" class="btn btn-ghost">← Назад</a>
+    <span class="page-title">🛡️ Страница суперпользователя</span>
+  </div>
+</header>
 
-  <main class="container">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🚧</div>
-      <h2>Раздел в разработке</h2>
-      <p style="color: var(--text-muted); margin-top: 8px;">
-        Страница суперпользователя будет реализована в следующих итерациях.
-      </p>
+<!-- ============================================================
+     Main Content
+     ============================================================ -->
+<main class="container">
+
+  <!-- Tabs Navigation -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="create-user">➕ Создать пользователя</button>
+    <button class="tab-btn"        data-tab="users">👥 Все пользователи</button>
+  </div>
+
+  <!-- ========================
+       Tab 1: Create User
+       ======================== -->
+  <div class="tab-panel active" id="tab-create-user">
+    <div class="card">
+      <h2 class="card-title">Создание пользователя</h2>
+
+      <form id="createUserForm" novalidate>
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label class="form-label" for="userEmail">Email *</label>
+            <input type="email" id="userEmail" class="form-control"
+                   placeholder="user@example.com" required />
+            <span class="hint">Электронная почта пользователя</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="userRole">Роль *</label>
+            <select id="userRole" class="form-control" required>
+              <option value="">— Выберите роль —</option>
+              <option value="CLIENT">Клиент</option>
+              <option value="COMPANY_AGENT">Представитель компании</option>
+              <option value="COMPANY_ADMIN">Администратор компании</option>
+              <option value="ADMIN">Администратор</option>
+              <option value="SUPER_USER">Суперпользователь</option>
+            </select>
+            <span class="hint">Роль пользователя в системе</span>
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label" for="userLinkedCompanyId">Привязанная компания</label>
+            <select id="userLinkedCompanyId" class="form-control">
+              <option value="">— Не привязывать —</option>
+            </select>
+            <span class="hint">Необязательно. Компания, к которой относится пользователь</span>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="submitUserBtn" class="btn btn-primary">
+            Создать пользователя
+          </button>
+          <div id="createUserAlert"></div>
+        </div>
+      </form>
     </div>
-  </main>
+  </div>
+
+  <!-- ========================
+       Tab 2: Users List
+       ======================== -->
+  <div class="tab-panel" id="tab-users">
+    <div class="card">
+      <h2 class="card-title">Все пользователи системы</h2>
+
+      <!-- Toolbar: sort field + sort order -->
+      <div class="toolbar">
+        <label class="form-label" for="userSortBy" style="margin:0;">Сортировать по:</label>
+        <select id="userSortBy" class="form-control" style="width: auto;">
+          <option value="">— Без сортировки —</option>
+          <option value="ID">ID</option>
+          <option value="EMAIL">Email</option>
+          <option value="ROLE">Роль</option>
+          <option value="LINKED_COMPANY_ID">Компания</option>
+        </select>
+
+        <select id="userSortOrder" class="form-control" style="width: auto;">
+          <option value="ASC">По возрастанию</option>
+          <option value="DESC">По убыванию</option>
+        </select>
+
+        <button id="usersApplyBtn" class="btn btn-primary btn-sm">Применить</button>
+        <button id="usersResetBtn" class="btn btn-secondary btn-sm">Сбросить</button>
+
+        <span class="toolbar-spacer"></span>
+        <span id="usersCountInfo" class="page-info"></span>
+      </div>
+
+      <!-- Table -->
+      <div id="usersContent">
+        <div class="loading">Загрузка пользователей...</div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="usersPagination"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     Scripts
+     ============================================================ -->
+<script src="../js/api.js"></script>
+<script>
+  /* ============================================================
+     State
+     ============================================================ */
+  var state = {
+    /* Map id → name для всех компаний (для отображения в таблице) */
+    companiesMap: {},
+
+    /* Состояние вкладки "Все пользователи" */
+    usersPage:          0,
+    usersTotalPages:    0,
+    usersTotalElements: 0,
+    usersPageSize:      10,
+    usersSortBy:        '',     /* '' = sortBy не отправляется */
+    usersSortOrder:     'ASC'
+  };
+
+  /* Человекочитаемые названия ролей */
+  var ROLE_LABELS = {
+    CLIENT:        'Клиент',
+    COMPANY_AGENT: 'Представитель компании',
+    COMPANY_ADMIN: 'Администратор компании',
+    ADMIN:         'Администратор',
+    SUPER_USER:    'Суперпользователь'
+  };
+
+  /* ============================================================
+     Utility helpers
+     ============================================================ */
+
+  /** Экранирует HTML-спецсимволы для безопасной вставки в innerHTML */
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /** Возвращает имя компании по id или заглушку */
+  function companyName(id) {
+    if (!id) return '—';
+    return state.companiesMap[id] ? esc(state.companiesMap[id]) : 'Компания #' + id;
+  }
+
+  /** Возвращает человекочитаемое название роли */
+  function roleLabel(role) {
+    if (!role) return '—';
+    return ROLE_LABELS[role] ? esc(ROLE_LABELS[role]) : esc(role);
+  }
+
+  /** Показывает/скрывает inline-алерт */
+  function showAlert(containerId, message, type) {
+    var el = document.getElementById(containerId);
+    if (!message) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+  }
+
+  /* ============================================================
+     Pagination renderer
+     ============================================================ */
+  function renderPagination(containerId, currentPage, totalPages, handlerName) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+    var prevDisabled = currentPage === 0 ? 'disabled' : '';
+    var nextDisabled = currentPage >= totalPages - 1 ? 'disabled' : '';
+
+    el.innerHTML =
+      '<button class="btn btn-secondary btn-sm" ' + prevDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage - 1) + ')">← Назад</button>' +
+      '<span class="page-info">Страница ' + (currentPage + 1) + ' из ' + totalPages + '</span>' +
+      '<button class="btn btn-secondary btn-sm" ' + nextDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage + 1) + ')">Вперёд →</button>';
+  }
+
+  /* ============================================================
+     Load companies for dropdown + map (run once on page load)
+     ============================================================ */
+  function loadCompaniesForLink() {
+    /* Без фильтра suppUserProfileExchange — нужны все компании для привязки */
+    Api.getCompaniesIdNameSummary()
+      .then(function (response) {
+        var companies = Array.isArray(response) ? response : [];
+
+        companies.forEach(function (c) {
+          state.companiesMap[c.id] = c.name;
+        });
+
+        var optionsHtml = '<option value="">— Не привязывать —</option>' +
+          companies.map(function (c) {
+            return '<option value="' + c.id + '">' + esc(c.name) + '</option>';
+          }).join('');
+
+        document.getElementById('userLinkedCompanyId').innerHTML = optionsHtml;
+      })
+      .catch(function (err) {
+        document.getElementById('userLinkedCompanyId').innerHTML =
+          '<option value="">— Ошибка загрузки компаний —</option>';
+        console.error('Ошибка загрузки компаний:', err);
+      });
+  }
+
+  /* ============================================================
+     Create User Form
+     ============================================================ */
+  document.getElementById('createUserForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var btn         = document.getElementById('submitUserBtn');
+    var email       = document.getElementById('userEmail').value.trim();
+    var role        = document.getElementById('userRole').value;
+    var companyId   = document.getElementById('userLinkedCompanyId').value;
+
+    showAlert('createUserAlert', '', 'success');
+
+    /* Client-side validation */
+    if (!email) {
+      showAlert('createUserAlert', 'Укажите email.', 'error'); return;
+    }
+    if (!role) {
+      showAlert('createUserAlert', 'Выберите роль.', 'error'); return;
+    }
+
+    var payload = { email: email, role: role };
+    if (companyId) {
+      payload.linkedCompanyId = Number(companyId);
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Создание...';
+
+    Api.createUser(payload)
+      .then(function (result) {
+        showAlert('createUserAlert',
+          '✓ Пользователь <strong>#' + esc(result.id) + '</strong> (' +
+          esc(result.email) + ') успешно создан!',
+          'success');
+        document.getElementById('createUserForm').reset();
+      })
+      .catch(function (err) {
+        showAlert('createUserAlert', 'Ошибка: ' + esc(err.message), 'error');
+      })
+      .finally(function () {
+        btn.disabled    = false;
+        btn.textContent = 'Создать пользователя';
+      });
+  });
+
+  /* ============================================================
+     Users tab
+     ============================================================ */
+  function loadUsers(page) {
+    if (page === undefined) page = 0;
+    state.usersPage = page;
+
+    document.getElementById('usersContent').innerHTML =
+      '<div class="loading">Загрузка...</div>';
+    document.getElementById('usersPagination').innerHTML = '';
+
+    Api.getUsers({
+      pageNumber: page,
+      pageSize:   state.usersPageSize,
+      sortBy:     state.usersSortBy,      /* '' → не отправляется */
+      sortOrder:  state.usersSortOrder
+    })
+    .then(function (response) {
+      var users = (response && response.data) ? response.data : [];
+      state.usersTotalPages    = response.totalPages    || 0;
+      state.usersTotalElements = response.totalElements || 0;
+
+      document.getElementById('usersCountInfo').textContent =
+        'Найдено: ' + state.usersTotalElements;
+
+      if (users.length === 0) {
+        document.getElementById('usersContent').innerHTML =
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">👥</div>' +
+            '<p>Пользователи не найдены</p>' +
+          '</div>';
+        return;
+      }
+
+      var rows = users.map(function (u) {
+        return '<tr>' +
+          '<td style="width:80px;color:var(--text-muted)">' + esc(u.id) + '</td>' +
+          '<td><strong>' + esc(u.email || '—') + '</strong></td>' +
+          '<td>' + roleLabel(u.role) + '</td>' +
+          '<td>' + companyName(u.linkedCompanyId) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('usersContent').innerHTML =
+        '<div class="table-wrapper">' +
+          '<table>' +
+            '<thead><tr>' +
+              '<th>ID</th>' +
+              '<th>Email</th>' +
+              '<th>Роль</th>' +
+              '<th>Компания</th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+
+      renderPagination('usersPagination',
+        state.usersPage,
+        state.usersTotalPages,
+        'loadUsers');
+    })
+    .catch(function (err) {
+      document.getElementById('usersContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки пользователей: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  /* Apply sort */
+  document.getElementById('usersApplyBtn').addEventListener('click', function () {
+    state.usersSortBy    = document.getElementById('userSortBy').value;
+    state.usersSortOrder = document.getElementById('userSortOrder').value;
+    loadUsers(0);
+  });
+
+  /* Reset sort */
+  document.getElementById('usersResetBtn').addEventListener('click', function () {
+    document.getElementById('userSortBy').value    = '';
+    document.getElementById('userSortOrder').value = 'ASC';
+    state.usersSortBy    = '';
+    state.usersSortOrder = 'ASC';
+    loadUsers(0);
+  });
+
+  /* ============================================================
+     Tab switching
+     ============================================================ */
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tab-btn').forEach(function (b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      document.querySelectorAll('.tab-panel').forEach(function (p) {
+        p.classList.remove('active');
+      });
+      var panel = document.getElementById('tab-' + btn.dataset.tab);
+      if (panel) panel.classList.add('active');
+
+      if (btn.dataset.tab === 'users') loadUsers(0);
+    });
+  });
+
+  /* ============================================================
+     Initialization
+     ============================================================ */
+  loadCompaniesForLink();   /* для выпадающего списка компаний и карты id→name */
+</script>
 
 </body>
 </html>

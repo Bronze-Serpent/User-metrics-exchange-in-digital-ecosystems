@@ -19,7 +19,7 @@ public class CompanyPointController {
 
     // Рест на создание у компании точку для предоставления метрик
     @PostMapping("/company-point/create")
-    public CompanyPointDto createCompany(CreateCompanyPointDto createCompanyPointDto) {
+    public CompanyPointDto createCompanyPoint(@RequestBody CreateCompanyPointDto createCompanyPointDto) {
 
         log.info("Получен запрос на создание точки компании");
         return companyPointService.createCompanyPoint(createCompanyPointDto);
@@ -53,6 +53,7 @@ public class CompanyPointController {
         log.info("Получен запрос на получение набора точек компаний");
         return companyPointService.getCompanyPointPage(companyPointPageRequest);
     }
+
 
     // Рест на обновление статуса компании
     @PostMapping("/company-points/{companyPointId}")

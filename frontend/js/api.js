@@ -78,8 +78,21 @@ var Api = (function () {
     /**
      * Получить компании для выпадающего списка (краткая сводка id + name).
      * Возвращает плоский массив [{ id, name }] (не PageResponse).
-     * Фильтр suppUserProfileExchange=true — только компании, поддерживающие
-     * перенос профилей пользователей.
+     * @param {boolean} [suppUserProfileExchange] - если задан, фильтрует компании
+     *   по поддержке переноса профилей пользователей. Если не задан — все компании.
+     */
+    getCompaniesIdNameSummary: function (suppUserProfileExchange) {
+      var qs = '';
+      if (suppUserProfileExchange !== undefined && suppUserProfileExchange !== null) {
+        qs = '?suppUserProfileExchange=' + suppUserProfileExchange;
+      }
+      return get('/user-exchange-metrics/companies/id-name-summary' + qs);
+    },
+
+    /**
+     * Получить компании, поддерживающие перенос профилей пользователей
+     * (suppUserProfileExchange=true). Используется в форме заявки.
+     * Возвращает плоский массив [{ id, name }].
      */
     getAllCompanies: function () {
       return get('/user-exchange-metrics/companies/id-name-summary?suppUserProfileExchange=true');
@@ -139,6 +152,40 @@ var Api = (function () {
      */
     getTransferRequest: function (id) {
       return get('/user-exchange-metrics/transfer-request/' + id);
+    },
+
+    /**
+     * Создать пользователя в системе.
+     * @param {object} payload - поля CreateUserDto:
+     *   email, role (UserRole), linkedCompanyId (необязательно)
+     */
+    createUser: function (payload) {
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/user/create', payload);
+    },
+
+    /**
+     * Получить список пользователей с пагинацией и сортировкой.
+     * @param {object} opts
+     * @param {number} opts.pageNumber
+     * @param {number} opts.pageSize
+     * @param {string} [opts.sortBy]     - поле сортировки (UserSortField).
+     *   Передаётся только если задано; иначе не отправляется, чтобы избежать
+     *   ошибки десериализации пока enum UserSortField на backend не заполнен.
+     * @param {string} opts.sortOrder    - 'ASC' | 'DESC'
+     */
+    getUsers: function (opts) {
+      opts = opts || {};
+      var data = {
+        pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
+        pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10,
+        sortOrder:  opts.sortOrder  || 'ASC'
+      };
+      if (opts.sortBy) {
+        data.sortBy = opts.sortBy;
+      }
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/users', data);
     }
   };
 })();
