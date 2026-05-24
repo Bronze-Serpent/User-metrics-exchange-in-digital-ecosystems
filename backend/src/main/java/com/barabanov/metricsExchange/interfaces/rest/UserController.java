@@ -2,9 +2,9 @@ package com.barabanov.metricsExchange.interfaces.rest;
 
 import com.barabanov.metricsExchange.interfaces.rest.dto.CreateUserDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
+import com.barabanov.metricsExchange.interfaces.rest.dto.UserDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.UserPageRequest;
 import com.barabanov.metricsExchange.service.UserService;
-import com.barabanov.metricsExchange.interfaces.rest.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -23,7 +23,7 @@ public class UserController {
     // Рест на создание аккаунта представителя компании в системе
     // Рест на создание администратора
     @PostMapping("/user/create")
-    public UserDto createUser(CreateUserDto createUserDto) {
+    public UserDto createUser(@RequestBody CreateUserDto createUserDto) {
 
         log.info("Получен запрос на создание пользователя");
         return userService.createUser(createUserDto);

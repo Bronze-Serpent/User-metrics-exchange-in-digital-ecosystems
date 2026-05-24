@@ -48,6 +48,21 @@ var Api = (function () {
     return res.json();
   }
 
+  /** Отправляет POST-запрос с телом application/json. */
+  async function postJson(url, data) {
+    var res = await fetch(API_BASE + url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      var text = await res.text().catch(function () { return 'Нет деталей'; });
+      throw new Error('HTTP ' + res.status + ': ' + text);
+    }
+    return res.json();
+  }
+
   /** Отправляет GET-запрос и возвращает JSON. */
   async function get(url) {
     var res = await fetch(API_BASE + url);
@@ -61,14 +76,13 @@ var Api = (function () {
   return {
 
     /**
-     * Получить все компании для выпадающего списка.
-     * Запрашивает первую страницу размером 1000 — компаний не больше тысячи.
+     * Получить компании для выпадающего списка (краткая сводка id + name).
+     * Возвращает плоский массив [{ id, name }] (не PageResponse).
+     * Фильтр suppUserProfileExchange=true — только компании, поддерживающие
+     * перенос профилей пользователей.
      */
     getAllCompanies: function () {
-      return postForm('/company-exchange-metrics/companies', {
-        pageNumber: 0,
-        pageSize: 1000
-      });
+      return get('/user-exchange-metrics/companies/id-name-summary?suppUserProfileExchange=true');
     },
 
     /**
@@ -89,7 +103,8 @@ var Api = (function () {
       if (opts.nameFilter) {
         data.companyFilter = { companyNameSubstring: opts.nameFilter };
       }
-      return postForm('/company-exchange-metrics/companies', data);
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/companies', data);
     },
 
     /**
@@ -98,7 +113,8 @@ var Api = (function () {
      *   fromProfileId, toProfileId, comment, fromCompanyId, toCompanyId
      */
     createTransferRequest: function (payload) {
-      return postForm('/alliance-exchange-metrics/transfer-request/create', payload);
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/transfer-request/create', payload);
     },
 
     /**
@@ -109,7 +125,8 @@ var Api = (function () {
      */
     getTransferRequests: function (opts) {
       opts = opts || {};
-      return postForm('/alliance-exchange-metrics/transfer-requests', {
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/transfer-requests', {
         pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
         pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10,
         sortOrder: 'DESC'
@@ -121,7 +138,7 @@ var Api = (function () {
      * @param {number|string} id
      */
     getTransferRequest: function (id) {
-      return get('/alliance-exchange-metrics/transfer-request/' + id);
+      return get('/user-exchange-metrics/transfer-request/' + id);
     }
   };
 })();

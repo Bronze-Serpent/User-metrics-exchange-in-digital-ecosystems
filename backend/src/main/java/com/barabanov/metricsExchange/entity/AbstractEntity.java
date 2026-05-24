@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.OffsetDateTime;
@@ -29,9 +28,16 @@ public class AbstractEntity {
     @Version
     private Integer version;
 
-    @CreatedBy
     private OffsetDateTime createdAt;
+
+
+    /**
+     * @CreatedDate не поддерживает OffsetDateTime. Local, Instant, Date, timestamp.
+     * Возможно, стоит на backend всегда использовать Instant, но бывают случаи когда нужно знать часовой пояс пользователя
+     * (например, если нужно ответить пользователю о том что заявка будет разрешена не позднее <даты>, где датой должно быть время до 12 часов след. рабочего дня)
+     */
+    @PrePersist
+    public void fillFieldsPrePersist() {
+        createdAt = OffsetDateTime.now();
+    }
 }
-
-
-

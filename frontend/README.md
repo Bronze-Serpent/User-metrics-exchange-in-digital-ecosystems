@@ -115,13 +115,13 @@ public class CorsConfig {
 
 | Поле                    | Тип           | Описание                                                                  |
 |-------------------------|---------------|---------------------------------------------------------------------------|
-| Компания-источник       | Выпадающий список | Загружается из `POST /company-exchange-metrics/companies` (pageSize=1000) |
+| Компания-источник       | Выпадающий список | Загружается из `GET /user-exchange-metrics/companies/id-name-summary?suppUserProfileExchange=true` (плоский массив `[{id, name}]`) |
 | Компания-назначение     | Выпадающий список | То же                                                                     |
 | ID профиля-источника    | Текст         | `fromProfileId`                                                           |
 | ID профиля-назначения   | Текст         | `toProfileId`                                                             |
 | Комментарий             | Textarea      | `comment` (необязательно)                                                 |
 
-Запрос: `POST /alliance-exchange-metrics/transfer-request/create`
+Запрос: `POST /user-exchange-metrics/transfer-request/create`
 
 #### 🏢 Компании
 
@@ -130,7 +130,7 @@ public class CorsConfig {
 - **Сортировки** по названию (`sortOrder`: ASC / DESC)
 - **Пагинации** (10 компаний на страницу)
 
-Запрос: `POST /company-exchange-metrics/companies`
+Запрос: `POST /user-exchange-metrics/companies` (тело — **JSON**, `@RequestBody`)
 
 #### 📋 Мои заявки
 
@@ -141,8 +141,8 @@ public class CorsConfig {
 - **Клик по строке** → открывает модальное окно с полной информацией о заявке
 
 Запросы:
-- Список: `POST /alliance-exchange-metrics/transfer-requests`
-- Детали: `GET /alliance-exchange-metrics/transfer-request/{id}`
+- Список: `POST /user-exchange-metrics/transfer-requests`
+- Детали: `GET /user-exchange-metrics/transfer-request/{id}`
 
 ---
 

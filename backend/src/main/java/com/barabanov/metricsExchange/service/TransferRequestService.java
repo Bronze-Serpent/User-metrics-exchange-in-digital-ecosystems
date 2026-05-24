@@ -3,13 +3,16 @@ package com.barabanov.metricsExchange.service;
 import com.barabanov.metricsExchange.entity.CompanyEntity;
 import com.barabanov.metricsExchange.entity.TransferRequestEntity;
 import com.barabanov.metricsExchange.entity.TransferStatus;
+import com.barabanov.metricsExchange.entity.UserEntity;
 import com.barabanov.metricsExchange.external.CompanyWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.kafka.KafkaSender;
 import com.barabanov.metricsExchange.kafka.dto.UserPortfolioEvent;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
 import com.barabanov.metricsExchange.mapper.TransferRequestMapper;
+import com.barabanov.metricsExchange.repository.CompanyRepository;
 import com.barabanov.metricsExchange.repository.TransferRequestRepository;
+import com.barabanov.metricsExchange.repository.UserRepository;
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,9 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-import static com.barabanov.metricsExchange.entity.TransferDecision.ACCEPT;
-import static com.barabanov.metricsExchange.entity.TransferStatus.CLOSED;
-import static com.barabanov.metricsExchange.entity.TransferStatus.DECISION_PROCESSING;
+import static com.barabanov.metricsExchange.entity.TransferStatus.*;
 
 
 @Slf4j
@@ -31,6 +32,8 @@ import static com.barabanov.metricsExchange.entity.TransferStatus.DECISION_PROCE
 public class TransferRequestService {
 
     private final TransferRequestRepository transferRequestRepository;
+    private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
     private final TransferRequestMapper transferRequestMapper;
     private final PredicateDataMapper predicateDataMapper;
     private final KafkaSender kafkaSender;
@@ -40,6 +43,17 @@ public class TransferRequestService {
     @Transactional
     public TransferRqDto createTransferRq(CreateTransferRqDto createTransferRqDto) {
         TransferRequestEntity creatingTransferRequest = transferRequestMapper.mapToEntity(createTransferRqDto);
+        CompanyEntity fromCompanyEntity = companyRepository.findById(createTransferRqDto.getFromCompanyId())
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию с id: %s", createTransferRqDto.getFromCompanyId())));
+        CompanyEntity toCompanyEntity = companyRepository.findById(createTransferRqDto.getToCompanyId())
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию с id: %s", createTransferRqDto.getToCompanyId())));
+        UserEntity requestCreatorEntity = userRepository.findById(1L)
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти пользователя с id: %s", 1)));
+
+        creatingTransferRequest.setUser(requestCreatorEntity); // TODO: Доставать пользователя из контекста? + валидация что у него подходящая роль
+        creatingTransferRequest.setFromCompany(fromCompanyEntity);
+        creatingTransferRequest.setToCompany(toCompanyEntity);
+        creatingTransferRequest.setStatus(NEW);
         return transferRequestMapper.mapToTransferRqDto(transferRequestRepository.save(creatingTransferRequest));
     }
 

@@ -39,5 +39,5 @@ public class TransferRequestEntity extends AbstractEntity {
     private CompanyEntity toCompany;
 
     @ManyToOne
-    private UserEntity user; //TODO: Доделать т.к. заявки то принадлежат пользователям
+    private UserEntity user;
 }

@@ -1,9 +1,12 @@
 package com.barabanov.metricsExchange.interfaces.rest.dto;
 
+import com.barabanov.metricsExchange.entity.TransferStatus;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
+
+import java.time.OffsetDateTime;
 
 
 @Data
@@ -12,6 +15,8 @@ import lombok.experimental.FieldDefaults;
 public class TransferRqDto {
 
     Long id;
+    TransferStatus status;
+    OffsetDateTime createdAt;
     String fromProfileId;
     String toProfileId;
     String comment;

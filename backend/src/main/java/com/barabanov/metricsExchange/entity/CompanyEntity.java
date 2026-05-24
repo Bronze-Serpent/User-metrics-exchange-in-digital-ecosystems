@@ -1,7 +1,9 @@
 package com.barabanov.metricsExchange.entity;
 
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -12,8 +14,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-@ToString(callSuper = true, exclude = {"owner", "points"})
-@EqualsAndHashCode(callSuper = true, exclude = {"owner", "points"})
+@ToString(callSuper = true, exclude = {"companyUsers", "points"})
+@EqualsAndHashCode(callSuper = true, exclude = {"companyUsers", "points"})
 @Entity
 @Table(name = "company")
 public class CompanyEntity extends AbstractEntity {
@@ -28,9 +30,8 @@ public class CompanyEntity extends AbstractEntity {
 
     private String triggerUrlForExportUserPortfolio;
 
-    @JoinColumn(name = "owner_user_id")
-    @OneToOne(fetch = FetchType.LAZY)
-    private UserEntity owner;
+    @OneToMany(mappedBy = "linkedCompany")
+    private List<UserEntity> companyUsers;
 
     @OneToMany(mappedBy = "company")
     private List<CompanyPointEntity> points;

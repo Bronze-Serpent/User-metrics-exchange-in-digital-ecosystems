@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @Slf4j
-@RequestMapping("/alliance-exchange-metrics")
+@RequestMapping("/user-exchange-metrics")
 @RequiredArgsConstructor
 @RestController
 public class AlliancePointController {

@@ -1,19 +1,18 @@
 package com.barabanov.metricsExchange.interfaces.rest;
 
-import com.barabanov.metricsExchange.interfaces.rest.dto.CompanyDto;
-import com.barabanov.metricsExchange.interfaces.rest.dto.CompanyPageRequest;
-import com.barabanov.metricsExchange.interfaces.rest.dto.CreateCompanyDto;
-import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
+import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.service.CompanyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("/company-exchange-metrics")
+@RequestMapping("/user-exchange-metrics")
 @RestController
 public class CompanyController {
 
@@ -22,11 +21,12 @@ public class CompanyController {
 
     // Рест на создание новой компании в системе
     @PostMapping("/company/create")
-    public CompanyDto createCompany(CreateCompanyDto createCompanyDto) {
+    public CompanyDto createCompany(@RequestBody CreateCompanyDto createCompanyDto) {
 
         log.info("Получен запрос на создание компании");
         return companyService.createCompany(createCompanyDto);
     }
+
 
     @GetMapping("/company/{companyId}")
     public CompanyDto getCompany(@PathVariable Long companyId) {
@@ -34,6 +34,7 @@ public class CompanyController {
         log.info("Получен запрос на получение информации по компании");
         return companyService.getCompanyInfo(companyId);
     }
+
 
     // Рест на удаление компании
     @DeleteMapping("/company/{companyId}")
@@ -44,12 +45,22 @@ public class CompanyController {
         companyService.deleteCompany(companyId);
     }
 
-    // Рест на получение списка компаний партнёров, с пагинацией (возможно: в будущем сделать у компании признак того участвует ли она в переносе профилей или только в альянсах состоит)
-    @PostMapping("/companies")
-    public PageResponse<CompanyDto> getCompanies(CompanyPageRequest CompanyPageRequest) {
 
-        log.info("Получен запрос на получение набора компаний");
-        return companyService.getCompanyPage(CompanyPageRequest);
+    // Рест на получение списка компаний партнёров, с пагинацией
+    @PostMapping("/companies")
+    public PageResponse<CompanyDto> getCompanies(@RequestBody CompanyPageRequest companyPageRequest) {
+
+        log.info("Получен запрос на получение страницы компаний");
+        return companyService.getCompanyPage(companyPageRequest);
+    }
+
+
+    // Рест на получение значений для списков компаний
+    @GetMapping("/companies/id-name-summary")
+    public List<CompanyIdNameDto> getCompaniesIaNameSummary(Boolean suppUserProfileExchange) {
+
+        log.info("Получен запрос на получение краткой информации о компаниях");
+        return companyService.getIdNameSummary(suppUserProfileExchange);
     }
 
 }

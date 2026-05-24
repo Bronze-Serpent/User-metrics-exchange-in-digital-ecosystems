@@ -2,12 +2,15 @@ package com.barabanov.metricsExchange;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+
+@EnableJpaAuditing
 @SpringBootApplication
 public class MetricsExchangeApplication {
     /**
      * TODO:
-     * 1. Нужна валидация на все рест запросы
+     * 1. Нужна валидация на все рест запросы (+ валидация на создание пользователей. Какие роли могут создавать пользователей + на то что владелец компании может создавать админов только своей компании)
      * 2. Нужна валдиация соответствия формата точки и формата альянса при подключении
      * 3. нужна отключаемая валидация полученных ответов от партнёров при запросе метрик пользователя (проверять что ответ соответствует формату альянса)
      * 4. Рассмотреть вариант разнесения url в CompanyPoint на host (в Company) и path (CompanyPoint). Тогда придётся получать информацию и о компании при запросе метрик. Чтобы этого не делать сейчас хранится всё вместе. Но можно хранить раздельно, перейти на нативный запрос в БД при получении метрик + возможно, кэш этого запроса
@@ -15,6 +18,7 @@ public class MetricsExchangeApplication {
      * 6. Дополнить ресты различными фильтрами + реализовать сортировки с помощью, в частности, UserSortField
      * 7. Рассмотреть идею написать переопределённых методов set у слоя сущностье для сохранения данных в согласованном виде на уровне java модели (creatingAlliancePoint.setAlliance(alliance); в частности)
      * 8. Сделать TransactionalOutbox для REST триггера компании на выгрузку профиля и для отправок портфолио пользователей в kafka
+     * 9. Сделать рест на получение значений для списков компаний с запросом по частям, а ек сразу всех элементов и мб перейти там на обычный фильтр компаний, так проще будет (но возвращаемое значение другое)
      */
     public static void main(String[] args) {
         SpringApplication.run(MetricsExchangeApplication.class, args);

@@ -263,7 +263,8 @@
   function loadCompaniesForDropdowns() {
     Api.getAllCompanies()
       .then(function (response) {
-        var companies = (response && response.data) ? response.data : [];
+        /* Эндпоинт /companies/id-name-summary возвращает плоский массив [{id, name}] */
+        var companies = Array.isArray(response) ? response : [];
         state.allCompaniesLoaded = true;
 
         /* Populate state.companiesMap */

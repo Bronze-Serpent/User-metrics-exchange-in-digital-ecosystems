@@ -38,6 +38,15 @@ public interface PredicateDataMapper {
                 .build();
     }
 
+    default Predicate mapToSupportUserExchangeCompanyFilter(Boolean suppUserProfileExchangeFilter) {
+        if (suppUserProfileExchangeFilter == null)
+            return QPredicates.builder().build();
+
+        return QPredicates.builder()
+                .add(suppUserProfileExchangeFilter, companyEntity.suppUserProfileExchange::eq)
+                .build();
+    }
+
 
     default Predicate mapCompanyPointFilterToPredicate(CompanyPointFilter companyPointFilter) {
         if (companyPointFilter == null)

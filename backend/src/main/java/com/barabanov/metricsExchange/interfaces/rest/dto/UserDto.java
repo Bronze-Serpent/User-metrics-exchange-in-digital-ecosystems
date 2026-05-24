@@ -14,4 +14,5 @@ public class UserDto {
     Long id;
     String email;
     UserRole role;
+    Long linkedCompanyId;
 }

@@ -13,7 +13,6 @@ public class CreateCompanyDto {
 
     String name;
     String description;
-    Long ownerUserId;
     Boolean suppUserProfileExchange;
     String userProfileImportTopicName;
     String triggerUrlForExportUserPortfolio;

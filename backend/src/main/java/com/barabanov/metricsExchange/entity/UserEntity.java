@@ -23,6 +23,7 @@ public class UserEntity extends AbstractEntity {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
+    @JoinColumn(name = "linked_company_id")
     @ManyToOne(fetch = FetchType.LAZY)
-    private CompanyEntity linkedCompany; //TODO: (хотя для админа может и у пользователя) не у пользователя компания должна быть, а у компании создатель всё же скорее (удалить из ДТО создания пользователя просто)
+    private CompanyEntity linkedCompany;
 }

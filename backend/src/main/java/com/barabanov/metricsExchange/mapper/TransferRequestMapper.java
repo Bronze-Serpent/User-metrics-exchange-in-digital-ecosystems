@@ -4,10 +4,7 @@ import com.barabanov.metricsExchange.entity.TransferRequestEntity;
 import com.barabanov.metricsExchange.interfaces.rest.dto.CreateTransferRqDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.TransferDecisionDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.TransferRqDto;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 
@@ -16,6 +13,8 @@ import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 public interface TransferRequestMapper {
     TransferRequestEntity mapToEntity(CreateTransferRqDto createTransferRqDto);
 
+    @Mapping(target = "fromCompanyId", source = "source.fromCompany.id")
+    @Mapping(target = "toCompanyId", source = "source.toCompany.id")
     TransferRqDto mapToTransferRqDto(TransferRequestEntity source);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
