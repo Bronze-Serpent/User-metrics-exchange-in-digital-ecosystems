@@ -86,7 +86,23 @@ body {
 .btn-ghost          { background: transparent; color: var(--primary); padding: 7px 12px; }
 .btn-ghost:hover    { background: var(--primary-light); }
 
+.btn-danger         { background: var(--danger);  color: #fff; }
+.btn-danger:not(:disabled):hover  { background: #b91c1c; }
+
 .btn-sm  { padding: 5px 13px; font-size: 0.8rem; }
+
+/* Иконка-кнопка удаления (корзина) в строках таблицы */
+.btn-trash {
+  background: transparent;
+  color: var(--danger);
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+.btn-trash:hover { background: #fef2f2; }
 
 /* ---- Home Page ---- */
 .home-page {
@@ -265,6 +281,36 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
 .alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+/* ---- Utility ---- */
+.hidden { display: none !important; }
+
+/* ---- Company select button (открывает модалку выбора компании) ---- */
+.company-select-btn {
+  text-align: left;
+  cursor: pointer;
+  background: #fff;
+  width: 100%;
+}
+.company-select-btn:hover { border-color: var(--primary); }
+
+/* ---- Company picker list (скроллируемый список с подгрузкой) ---- */
+.picker-list {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 12px;
+}
+.picker-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.picker-item:last-child { border-bottom: none; }
+.picker-item:hover { background: #f0f7ff; }
+.picker-item-id { color: var(--text-muted); font-size: 0.8rem; }
 
 /* ---- Toolbar ---- */
 .toolbar {

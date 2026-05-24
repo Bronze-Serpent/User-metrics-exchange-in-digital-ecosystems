@@ -9,8 +9,9 @@ import lombok.experimental.FieldDefaults;
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class CompanyFilter {
-    String companyNameSubstring;
-    Long companyId;
-    Boolean suppUserProfileExchange;
+public class CompanyIdNameSummaryRq {
+
+    Integer pageNumber;
+    Integer pageSize;
+    CompanyFilter companyFilter;
 }

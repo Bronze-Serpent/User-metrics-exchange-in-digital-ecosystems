@@ -13,6 +13,7 @@ CREATE TABLE metrics_exchange.company
     supp_user_profile_exchange            BOOLEAN               NOT NULL,
     user_profile_import_topic_name        VARCHAR(250),
     trigger_url_for_export_user_portfolio VARCHAR(250),
+    is_deleted							  BOOLEAN               NOT NULL,
     version                               INTEGER,
     created_at                            TIMESTAMPTZ
 );

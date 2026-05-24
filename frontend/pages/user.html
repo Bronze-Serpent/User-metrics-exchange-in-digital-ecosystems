@@ -41,18 +41,20 @@
         <div class="form-grid">
 
           <div class="form-group">
-            <label class="form-label" for="fromCompanyId">Компания-источник *</label>
-            <select id="fromCompanyId" class="form-control" required>
-              <option value="">— загрузка списка... —</option>
-            </select>
+            <label class="form-label">Компания-источник *</label>
+            <button type="button" id="fromCompanyBtn" class="form-control company-select-btn">
+              — Выберите компанию —
+            </button>
+            <input type="hidden" id="fromCompanyId" />
             <span class="hint">Компания, из которой переносится рейтинг</span>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="toCompanyId">Компания-назначение *</label>
-            <select id="toCompanyId" class="form-control" required>
-              <option value="">— загрузка списка... —</option>
-            </select>
+            <label class="form-label">Компания-назначение *</label>
+            <button type="button" id="toCompanyBtn" class="form-control company-select-btn">
+              — Выберите компанию —
+            </button>
+            <input type="hidden" id="toCompanyId" />
             <span class="hint">Компания, в которую переносится рейтинг</span>
           </div>
 
@@ -95,15 +97,13 @@
     <div class="card">
       <h2 class="card-title">Список компаний</h2>
 
-      <!-- Toolbar: search + sort -->
+      <!-- Toolbar: filters -->
       <div class="toolbar">
         <input type="text" id="companyNameFilter" class="form-control"
-               placeholder="Поиск по названию..." style="max-width: 260px;" />
+               placeholder="Поиск по названию..." style="max-width: 240px;" />
 
-        <select id="companySortOrder" class="form-control" style="width: auto;">
-          <option value="ASC">Сортировка: A → Z</option>
-          <option value="DESC">Сортировка: Z → A</option>
-        </select>
+        <input type="number" id="companyIdFilter" class="form-control"
+               placeholder="ID компании" style="max-width: 140px;" />
 
         <button id="companiesSearchBtn" class="btn btn-primary btn-sm">Найти</button>
         <button id="companiesResetBtn"  class="btn btn-secondary btn-sm">Сбросить</button>
@@ -161,6 +161,34 @@
 </div>
 
 <!-- ============================================================
+     Modal: Company Picker (для выбора компании в заявке)
+     ============================================================ -->
+<div class="modal-overlay" id="companyPickerModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Выбор компании</h3>
+      <button class="modal-close" id="closePickerBtn" aria-label="Закрыть">×</button>
+    </div>
+    <div>
+      <p class="hint" style="margin-bottom: 12px;">
+        Показаны только компании, поддерживающие перенос профиля.
+      </p>
+      <div class="toolbar">
+        <input type="text" id="pickerNameFilter" class="form-control"
+               placeholder="Поиск по названию..." style="max-width: 220px;" />
+        <input type="number" id="pickerIdFilter" class="form-control"
+               placeholder="ID" style="max-width: 120px;" />
+        <button id="pickerSearchBtn" class="btn btn-primary btn-sm">Найти</button>
+        <button id="pickerResetBtn"  class="btn btn-secondary btn-sm">Сбросить</button>
+      </div>
+      <div id="pickerList" class="picker-list">
+        <div class="loading">Загрузка...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      Scripts
      ============================================================ -->
 <script src="../js/api.js"></script>
@@ -169,9 +197,8 @@
      State
      ============================================================ */
   var state = {
-    /* Map id → name для всех компаний (загружается однажды) */
+    /* Map id → name компаний (наполняется по мере загрузки) */
     companiesMap: {},
-    allCompaniesLoaded: false,
 
     /* Состояние вкладки "Компании" */
     companiesPage:   0,
@@ -179,12 +206,23 @@
     companiesTotalElements: 0,
     companiesPageSize: 10,
     companiesNameFilter: '',
-    companiesSortOrder: 'ASC',
+    companiesIdFilter: '',
 
     /* Состояние вкладки "Заявки" */
     transfersPage:  0,
     transfersTotalPages: 0,
-    transfersPageSize: 10
+    transfersPageSize: 10,
+
+    /* Состояние модалки выбора компании (бесконечная подгрузка по 100) */
+    picker: {
+      target:     null,    /* 'from' | 'to' — какое поле заполняем */
+      page:       0,
+      pageSize:   100,
+      nameFilter: '',
+      idFilter:   '',
+      hasMore:    true,
+      loading:    false
+    }
   };
 
   /* ============================================================
@@ -258,36 +296,148 @@
   }
 
   /* ============================================================
-     Load companies for dropdowns (run once on page load)
+     Company Picker modal (выбор компании для заявки)
+     Запрашивает компании постранично по 100 шт. и подгружает
+     следующую страницу при прокрутке списка вниз.
+     Фильтр suppUserProfileExchange=true отправляется всегда —
+     пользователь видит только компании с поддержкой переноса профиля.
      ============================================================ */
-  function loadCompaniesForDropdowns() {
-    Api.getAllCompanies()
-      .then(function (response) {
-        /* Эндпоинт /companies/id-name-summary возвращает плоский массив [{id, name}] */
-        var companies = Array.isArray(response) ? response : [];
-        state.allCompaniesLoaded = true;
 
-        /* Populate state.companiesMap */
-        companies.forEach(function (c) {
-          state.companiesMap[c.id] = c.name;
-        });
-
-        /* Build <option> list */
-        var optionsHtml = '<option value="">— Выберите компанию —</option>' +
-          companies.map(function (c) {
-            return '<option value="' + c.id + '">' + esc(c.name) + '</option>';
-          }).join('');
-
-        document.getElementById('fromCompanyId').innerHTML = optionsHtml;
-        document.getElementById('toCompanyId').innerHTML   = optionsHtml;
-      })
-      .catch(function (err) {
-        var errOption = '<option value="">— Ошибка загрузки —</option>';
-        document.getElementById('fromCompanyId').innerHTML = errOption;
-        document.getElementById('toCompanyId').innerHTML   = errOption;
-        console.error('Ошибка загрузки компаний для выпадающих списков:', err);
-      });
+  /** Открывает модалку выбора компании для указанного поля ('from' | 'to'). */
+  function openCompanyPicker(target) {
+    state.picker.target     = target;
+    state.picker.nameFilter = '';
+    state.picker.idFilter   = '';
+    document.getElementById('pickerNameFilter').value = '';
+    document.getElementById('pickerIdFilter').value   = '';
+    document.getElementById('companyPickerModal').classList.add('open');
+    loadPickerCompanies(true);
   }
+
+  /** Рендерит и дописывает строки компаний в список модалки. */
+  function appendPickerItems(companies) {
+    var html = companies.map(function (c) {
+      return '<div class="picker-item" onclick="selectCompany(' + c.id + ')">' +
+        '<strong>' + esc(c.name || '—') + '</strong> ' +
+        '<span class="picker-item-id">#' + esc(c.id) + '</span>' +
+      '</div>';
+    }).join('');
+    document.getElementById('pickerList').insertAdjacentHTML('beforeend', html);
+  }
+
+  /**
+   * Загружает очередную страницу компаний.
+   * @param {boolean} reset - true: начать заново (новые фильтры / открытие).
+   */
+  function loadPickerCompanies(reset) {
+    var p = state.picker;
+    if (p.loading) return;
+    if (!reset && !p.hasMore) return;
+
+    var listEl = document.getElementById('pickerList');
+    if (reset) {
+      p.page = 0;
+      p.hasMore = true;
+      listEl.innerHTML = '';
+    }
+    p.loading = true;
+
+    var loadingEl = document.createElement('div');
+    loadingEl.className = 'loading';
+    loadingEl.textContent = 'Загрузка...';
+    listEl.appendChild(loadingEl);
+
+    Api.getCompaniesIdNameSummary({
+      pageNumber:              p.page,
+      pageSize:                p.pageSize,
+      nameFilter:              p.nameFilter,
+      companyId:               p.idFilter,
+      suppUserProfileExchange: true
+    })
+    .then(function (response) {
+      var companies = Array.isArray(response) ? response : [];
+      companies.forEach(function (c) { state.companiesMap[c.id] = c.name; });
+
+      if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
+
+      if (p.page === 0 && companies.length === 0) {
+        listEl.innerHTML =
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">🏢</div>' +
+            '<p>Компании не найдены</p>' +
+          '</div>';
+        p.hasMore = false;
+        return;
+      }
+
+      appendPickerItems(companies);
+      if (companies.length < p.pageSize) p.hasMore = false;
+      p.page += 1;
+    })
+    .catch(function (err) {
+      if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
+      listEl.insertAdjacentHTML('beforeend',
+        '<div class="alert alert-error" style="margin:10px;">Ошибка: ' + esc(err.message) + '</div>');
+    })
+    .finally(function () { p.loading = false; });
+  }
+
+  /** Выбор компании из списка → заполняет поле заявки и закрывает модалку. */
+  function selectCompany(id) {
+    var target = state.picker.target;
+    var name   = state.companiesMap[id] || ('Компания #' + id);
+    if (target === 'from') {
+      document.getElementById('fromCompanyId').value      = id;
+      document.getElementById('fromCompanyBtn').textContent = name;
+    } else if (target === 'to') {
+      document.getElementById('toCompanyId').value      = id;
+      document.getElementById('toCompanyBtn').textContent = name;
+    }
+    document.getElementById('companyPickerModal').classList.remove('open');
+  }
+
+  /* Открытие модалки по кнопкам-селекторам */
+  document.getElementById('fromCompanyBtn').addEventListener('click', function () {
+    openCompanyPicker('from');
+  });
+  document.getElementById('toCompanyBtn').addEventListener('click', function () {
+    openCompanyPicker('to');
+  });
+
+  /* Подгрузка следующей страницы при прокрутке списка вниз */
+  document.getElementById('pickerList').addEventListener('scroll', function () {
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 40) {
+      loadPickerCompanies(false);
+    }
+  });
+
+  /* Фильтры в модалке */
+  document.getElementById('pickerSearchBtn').addEventListener('click', function () {
+    state.picker.nameFilter = document.getElementById('pickerNameFilter').value.trim();
+    state.picker.idFilter   = document.getElementById('pickerIdFilter').value.trim();
+    loadPickerCompanies(true);
+  });
+  document.getElementById('pickerResetBtn').addEventListener('click', function () {
+    document.getElementById('pickerNameFilter').value = '';
+    document.getElementById('pickerIdFilter').value   = '';
+    state.picker.nameFilter = '';
+    state.picker.idFilter   = '';
+    loadPickerCompanies(true);
+  });
+  document.getElementById('pickerNameFilter').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('pickerSearchBtn').click();
+  });
+  document.getElementById('pickerIdFilter').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('pickerSearchBtn').click();
+  });
+
+  /* Закрытие модалки выбора компании */
+  document.getElementById('closePickerBtn').addEventListener('click', function () {
+    document.getElementById('companyPickerModal').classList.remove('open');
+  });
+  document.getElementById('companyPickerModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+  });
 
   /* ============================================================
      Companies tab
@@ -301,10 +451,11 @@
     document.getElementById('companiesPagination').innerHTML = '';
 
     Api.getCompanies({
-      pageNumber: page,
-      pageSize:   state.companiesPageSize,
-      nameFilter: state.companiesNameFilter,
-      sortOrder:  state.companiesSortOrder
+      pageNumber:              page,
+      pageSize:                state.companiesPageSize,
+      nameFilter:              state.companiesNameFilter,
+      companyId:               state.companiesIdFilter,
+      suppUserProfileExchange: true   /* всегда: показываем только компании с поддержкой переноса профиля */
     })
     .then(function (response) {
       var companies = (response && response.data) ? response.data : [];
@@ -363,27 +514,24 @@
   /* Search button */
   document.getElementById('companiesSearchBtn').addEventListener('click', function () {
     state.companiesNameFilter = document.getElementById('companyNameFilter').value.trim();
-    state.companiesSortOrder  = document.getElementById('companySortOrder').value;
+    state.companiesIdFilter   = document.getElementById('companyIdFilter').value.trim();
     loadCompanies(0);
   });
 
-  /* Enter in search field */
+  /* Enter in filter fields */
   document.getElementById('companyNameFilter').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') document.getElementById('companiesSearchBtn').click();
   });
-
-  /* Sort change */
-  document.getElementById('companySortOrder').addEventListener('change', function () {
-    state.companiesSortOrder = document.getElementById('companySortOrder').value;
-    loadCompanies(0);
+  document.getElementById('companyIdFilter').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('companiesSearchBtn').click();
   });
 
   /* Reset filters */
   document.getElementById('companiesResetBtn').addEventListener('click', function () {
     document.getElementById('companyNameFilter').value = '';
-    document.getElementById('companySortOrder').value  = 'ASC';
+    document.getElementById('companyIdFilter').value   = '';
     state.companiesNameFilter = '';
-    state.companiesSortOrder  = 'ASC';
+    state.companiesIdFilter   = '';
     loadCompanies(0);
   });
 
@@ -536,10 +684,12 @@
     if (e.target === this) this.classList.remove('open');
   });
 
-  /* Close modal on Escape */
+  /* Close modals on Escape */
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      document.getElementById('transferDetailModal').classList.remove('open');
+      document.querySelectorAll('.modal-overlay.open').forEach(function (m) {
+        m.classList.remove('open');
+      });
     }
   });
 
@@ -586,8 +736,12 @@
       showAlert('createRequestAlert',
         '✓ Заявка <strong>#' + esc(result.id) + '</strong> успешно создана!',
         'success');
-      /* Reset form */
+      /* Reset form + кнопки выбора компаний */
       document.getElementById('createRequestForm').reset();
+      document.getElementById('fromCompanyId').value = '';
+      document.getElementById('toCompanyId').value   = '';
+      document.getElementById('fromCompanyBtn').textContent = '— Выберите компанию —';
+      document.getElementById('toCompanyBtn').textContent   = '— Выберите компанию —';
     })
     .catch(function (err) {
       showAlert('createRequestAlert', 'Ошибка: ' + esc(err.message), 'error');
@@ -625,9 +779,8 @@
   /* ============================================================
      Initialization
      ============================================================ */
-  loadCompaniesForDropdowns();   /* always needed for the form dropdowns */
-  loadCompanies(0);              /* pre-load companies list (first tab is active at start,
-                                    but user may switch quickly, so we load companies too) */
+  loadCompanies(0);   /* предзагрузка списка компаний (заодно наполняет companiesMap
+                         для отображения названий в "Мои заявки") */
 </script>
 
 </body>

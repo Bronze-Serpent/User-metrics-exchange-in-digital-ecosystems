@@ -14,5 +14,4 @@ public class CompanyPageRequest {
     Integer pageNumber;
     Integer pageSize;
     CompanyFilter companyFilter;
-    SortOrder sortOrder;
 }

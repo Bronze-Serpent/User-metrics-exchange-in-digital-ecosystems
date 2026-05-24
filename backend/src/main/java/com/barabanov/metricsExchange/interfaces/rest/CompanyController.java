@@ -29,9 +29,9 @@ public class CompanyController {
 
 
     @GetMapping("/company/{companyId}")
-    public CompanyDto getCompany(@PathVariable Long companyId) {
+    public CompanyDto getCompanyBy(@PathVariable Long companyId) {
 
-        log.info("Получен запрос на получение информации по компании");
+        log.info("Получен запрос на получение информации по компании с id: {}", companyId);
         return companyService.getCompanyInfo(companyId);
     }
 
@@ -39,9 +39,9 @@ public class CompanyController {
     // Рест на удаление компании
     @DeleteMapping("/company/{companyId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCompany(@PathVariable Long companyId) {
+    public void deleteCompanyBy(@PathVariable Long companyId) {
 
-        log.info("Получен запрос на удаление компании");
+        log.info("Получен запрос на удаление компании c id: {}", companyId);
         companyService.deleteCompany(companyId);
     }
 
@@ -56,11 +56,11 @@ public class CompanyController {
 
 
     // Рест на получение значений для списков компаний
-    @GetMapping("/companies/id-name-summary")
-    public List<CompanyIdNameDto> getCompaniesIaNameSummary(Boolean suppUserProfileExchange) {
+    @PostMapping("/companies/id-name-summary")
+    public List<CompanyIdNameDto> getCompaniesIdNameSummary(@RequestBody CompanyIdNameSummaryRq companyIdNameSummaryRq) {
 
         log.info("Получен запрос на получение краткой информации о компаниях");
-        return companyService.getIdNameSummary(suppUserProfileExchange);
+        return companyService.getIdNameSummary(companyIdNameSummaryRq);
     }
 
 }

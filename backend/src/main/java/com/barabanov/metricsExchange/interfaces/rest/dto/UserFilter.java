@@ -13,7 +13,7 @@ import lombok.experimental.FieldDefaults;
 public class UserFilter {
 
     Long userId;
-    String userEmailSubstr; //TODO: дописать реализацию для этих фильтров
+    String userEmailSubstr;
     Long linkedCompanyId;
     UserRole userRole;
 }

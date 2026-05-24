@@ -73,49 +73,74 @@ var Api = (function () {
     return res.json();
   }
 
+  /**
+   * Собирает объект CompanyFilter из opts, включая только заданные поля.
+   * Поля: companyNameSubstring, companyId, suppUserProfileExchange.
+   */
+  function buildCompanyFilter(opts) {
+    var f = {};
+    if (opts.nameFilter) {
+      f.companyNameSubstring = opts.nameFilter;
+    }
+    if (opts.companyId !== undefined && opts.companyId !== null && opts.companyId !== '') {
+      f.companyId = opts.companyId;
+    }
+    if (opts.suppUserProfileExchange !== undefined && opts.suppUserProfileExchange !== null) {
+      f.suppUserProfileExchange = opts.suppUserProfileExchange;
+    }
+    return f;
+  }
+
+  /** Отправляет DELETE-запрос. Тело ответа не парсится (эндпоинты возвращают 204). */
+  async function del(url) {
+    var res = await fetch(API_BASE + url, { method: 'DELETE' });
+    if (!res.ok) {
+      var text = await res.text().catch(function () { return 'Нет деталей'; });
+      throw new Error('HTTP ' + res.status + ': ' + text);
+    }
+    return true;
+  }
+
   return {
 
     /**
-     * Получить компании для выпадающего списка (краткая сводка id + name).
+     * Получить компании (краткая сводка id + name) с пагинацией и фильтром.
+     * POST /companies/id-name-summary (тело CompanyIdNameSummaryRq).
      * Возвращает плоский массив [{ id, name }] (не PageResponse).
-     * @param {boolean} [suppUserProfileExchange] - если задан, фильтрует компании
-     *   по поддержке переноса профилей пользователей. Если не задан — все компании.
+     * @param {object} [opts]
+     * @param {number}  [opts.pageNumber=0]
+     * @param {number}  [opts.pageSize=1000]
+     * @param {string}  [opts.nameFilter]              - подстрока названия (companyNameSubstring)
+     * @param {number}  [opts.companyId]               - точный id компании
+     * @param {boolean} [opts.suppUserProfileExchange] - фильтр поддержки переноса профилей
      */
-    getCompaniesIdNameSummary: function (suppUserProfileExchange) {
-      var qs = '';
-      if (suppUserProfileExchange !== undefined && suppUserProfileExchange !== null) {
-        qs = '?suppUserProfileExchange=' + suppUserProfileExchange;
-      }
-      return get('/user-exchange-metrics/companies/id-name-summary' + qs);
+    getCompaniesIdNameSummary: function (opts) {
+      opts = opts || {};
+      var companyFilter = buildCompanyFilter(opts);
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/companies/id-name-summary', {
+        pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
+        pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 1000,
+        companyFilter: companyFilter
+      });
     },
 
     /**
-     * Получить компании, поддерживающие перенос профилей пользователей
-     * (suppUserProfileExchange=true). Используется в форме заявки.
-     * Возвращает плоский массив [{ id, name }].
-     */
-    getAllCompanies: function () {
-      return get('/user-exchange-metrics/companies/id-name-summary?suppUserProfileExchange=true');
-    },
-
-    /**
-     * Получить список компаний с пагинацией, фильтрацией и сортировкой.
+     * Получить список компаний с пагинацией и фильтром.
      * @param {object} opts
-     * @param {number} opts.pageNumber
-     * @param {number} opts.pageSize
-     * @param {string} opts.nameFilter   - подстрока для фильтра по названию
-     * @param {string} opts.sortOrder    - 'ASC' | 'DESC'
+     * @param {number}  opts.pageNumber
+     * @param {number}  opts.pageSize
+     * @param {string}  [opts.nameFilter]              - подстрока для фильтра по названию
+     * @param {number}  [opts.companyId]               - точный id компании
+     * @param {boolean} [opts.suppUserProfileExchange] - фильтр поддержки переноса профилей
      */
     getCompanies: function (opts) {
       opts = opts || {};
       var data = {
         pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
         pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10,
-        sortOrder:  opts.sortOrder  || 'ASC'
+        companyFilter: buildCompanyFilter(opts)
       };
-      if (opts.nameFilter) {
-        data.companyFilter = { companyNameSubstring: opts.nameFilter };
-      }
       // Эндпоинт принимает @RequestBody → отправляем JSON
       return postJson('/user-exchange-metrics/companies', data);
     },
@@ -173,6 +198,9 @@ var Api = (function () {
      *   Передаётся только если задано; иначе не отправляется, чтобы избежать
      *   ошибки десериализации пока enum UserSortField на backend не заполнен.
      * @param {string} opts.sortOrder    - 'ASC' | 'DESC'
+     * @param {object} [opts.userFilter] - фильтр (UserFilter): linkedCompanyId,
+     *   userRole, а также userId и userEmailSubstr (последние два backend пока
+     *   игнорирует — их нужно добавить в UserFilter).
      */
     getUsers: function (opts) {
       opts = opts || {};
@@ -184,8 +212,76 @@ var Api = (function () {
       if (opts.sortBy) {
         data.sortBy = opts.sortBy;
       }
+      if (opts.userFilter) {
+        data.userFilter = opts.userFilter;
+      }
       // Эндпоинт принимает @RequestBody → отправляем JSON
       return postJson('/user-exchange-metrics/users', data);
+    },
+
+    /**
+     * Удалить пользователя по id.
+     * @param {number|string} userId
+     */
+    deleteUser: function (userId) {
+      return del('/user-exchange-metrics/user/' + userId);
+    },
+
+    /**
+     * Удалить компанию из системы по id.
+     * Backend также удалит администраторов компании и откажет связанные заявки.
+     * @param {number|string} companyId
+     */
+    deleteCompany: function (companyId) {
+      return del('/user-exchange-metrics/company/' + companyId);
+    },
+
+    /**
+     * Создать у компании точку для предоставления метрик.
+     * @param {object} payload - поля CreateCompanyPointDto: url, format, companyId
+     */
+    createCompanyPoint: function (payload) {
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/company-point/create', payload);
+    },
+
+    /**
+     * Получить список точек компании с пагинацией.
+     * @param {object} opts
+     * @param {number} opts.pageNumber
+     * @param {number} opts.pageSize
+     * @param {number} opts.companyId    - фильтр по компании (CompanyPointFilter)
+     * @param {string} [opts.sortOrder]  - 'ASC' | 'DESC'
+     */
+    getCompanyPoints: function (opts) {
+      opts = opts || {};
+      var data = {
+        pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
+        pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10,
+        sortOrder:  opts.sortOrder  || 'ASC',
+        companyPointFilter: { companyId: opts.companyId }
+      };
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/company-points', data);
+    },
+
+    /**
+     * Получить подробную информацию о точке компании.
+     * @param {number|string} companyPointId
+     */
+    getCompanyPoint: function (companyPointId) {
+      return get('/user-exchange-metrics/company-point/' + companyPointId);
+    },
+
+    /**
+     * Обновить точку компании (статус и/или url).
+     * Эндпоинт без @RequestBody → отправляем form-encoded.
+     * @param {number|string} companyPointId
+     * @param {object} payload - поля CompanyPointUpdateDto:
+     *   newPointStatus (PointStatus), newCompanyPointUrl
+     */
+    updateCompanyPoint: function (companyPointId, payload) {
+      return postForm('/user-exchange-metrics/company-points/' + companyPointId, payload);
     }
   };
 })();

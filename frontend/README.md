@@ -115,22 +115,24 @@ public class CorsConfig {
 
 | Поле                    | Тип           | Описание                                                                  |
 |-------------------------|---------------|---------------------------------------------------------------------------|
-| Компания-источник       | Выпадающий список | Загружается из `GET /user-exchange-metrics/companies/id-name-summary?suppUserProfileExchange=true` (плоский массив `[{id, name}]`) |
-| Компания-назначение     | Выпадающий список | То же                                                                     |
+| Компания-источник       | Модалка выбора | Кнопка открывает модальное окно со списком компаний (фильтры по названию и id, бесконечная подгрузка по 100). `suppUserProfileExchange=true` отправляется всегда |
+| Компания-назначение     | Модалка выбора | То же                                                                     |
 | ID профиля-источника    | Текст         | `fromProfileId`                                                           |
 | ID профиля-назначения   | Текст         | `toProfileId`                                                             |
 | Комментарий             | Textarea      | `comment` (необязательно)                                                 |
 
-Запрос: `POST /user-exchange-metrics/transfer-request/create`
+Запросы:
+- Список компаний для модалки: `POST /user-exchange-metrics/companies/id-name-summary` (тело `CompanyIdNameSummaryRq`: `pageNumber`, `pageSize`, `companyFilter`; возвращает плоский массив `[{id, name}]`). Загрузка постранично по 100, следующая страница подгружается при прокрутке вниз.
+- Создание заявки: `POST /user-exchange-metrics/transfer-request/create`
 
 #### 🏢 Компании
 
-Список всех компаний с возможностью:
-- **Фильтрации** по названию (поле `companyFilter.companyNameSubstring`)
-- **Сортировки** по названию (`sortOrder`: ASC / DESC)
+Список компаний с возможностью:
+- **Фильтрации** по названию (`companyFilter.companyNameSubstring`) и по id (`companyFilter.companyId`)
 - **Пагинации** (10 компаний на страницу)
+- `suppUserProfileExchange=true` отправляется всегда — показываются только компании, поддерживающие перенос профиля
 
-Запрос: `POST /user-exchange-metrics/companies` (тело — **JSON**, `@RequestBody`)
+Запрос: `POST /user-exchange-metrics/companies` (тело — **JSON**, `CompanyPageRequest`: `pageNumber`, `pageSize`, `companyFilter`)
 
 #### 📋 Мои заявки
 

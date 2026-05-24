@@ -1,11 +1,15 @@
 package com.barabanov.metricsExchange.service;
 
 import com.barabanov.metricsExchange.entity.CompanyEntity;
+import com.barabanov.metricsExchange.entity.TransferDecision;
+import com.barabanov.metricsExchange.entity.TransferStatus;
 import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.mapper.CompanyMapper;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
+import com.barabanov.metricsExchange.repository.CompanyPointRepository;
 import com.barabanov.metricsExchange.repository.CompanyRepository;
-import com.barabanov.metricsExchange.utils.QPredicates;
+import com.barabanov.metricsExchange.repository.TransferRequestRepository;
+import com.barabanov.metricsExchange.repository.UserRepository;
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 
 @Slf4j
@@ -25,9 +27,12 @@ import java.util.stream.StreamSupport;
 @Service
 public class CompanyService {
 
+    private final CompanyRepository companyRepository;
+    private final TransferRequestRepository transferRequestRepository;
+    private final UserRepository userRepository;
+    private final CompanyPointRepository companyPointRepository;
     private final CompanyMapper companyMapper;
     private final PredicateDataMapper predicateDataMapper;
-    private final CompanyRepository companyRepository;
 
 
     @Transactional
@@ -40,7 +45,23 @@ public class CompanyService {
 
     @Transactional
     public void deleteCompany(Long companyId) {
-        companyRepository.deleteById(companyId);
+
+        CompanyEntity deletingCompany = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию с id: %s", companyId)));
+
+        userRepository.removeAllWith(companyId);
+        //TODO: удалять не так, а вызывая метод closeTransferRequest в сервисе transferRequest, но делая это батчами, в цикле чтобы могла отрабатывать доп логика на закрытие. Например отправка уведомлений и т.д.
+        // и текст вынести в Value
+        transferRequestRepository.setDecisionStatusCommentAllWith(TransferDecision.REJECT, TransferStatus.CLOSED,
+                String.format("Заявка закрыта по причине удаления компании с именем: %s из системы", deletingCompany.getName()), companyId);
+        companyPointRepository.removeAllWith(companyId);
+
+        /**
+         * Используется мягкое удаление для компании, поскольку на неё будут продолжать ссылаться заявки пользователей,
+         * которые удалять нельзя. Остальная же информация по компании удаляется
+         */
+        deletingCompany.setIsDeleted(true);
+        companyRepository.save(deletingCompany);
     }
 
 
@@ -64,9 +85,12 @@ public class CompanyService {
 
 
     @Transactional(readOnly = true)
-    public List<CompanyIdNameDto> getIdNameSummary(Boolean suppUserProfileExchangeFilter) {
-        Predicate predicate = predicateDataMapper.mapToSupportUserExchangeCompanyFilter(suppUserProfileExchangeFilter);
-        return StreamSupport.stream(companyRepository.findAll(predicate).spliterator(), false)
+    public List<CompanyIdNameDto> getIdNameSummary(CompanyIdNameSummaryRq companyIdNameSummaryRq) {
+        Predicate predicate = predicateDataMapper.mapCompanyFilterToPredicate(companyIdNameSummaryRq.getCompanyFilter());
+
+        return companyRepository.findCompaniesWith(predicate,
+                        companyIdNameSummaryRq.getPageSize(),
+                        companyIdNameSummaryRq.getPageNumber() * companyIdNameSummaryRq.getPageSize()).stream()
                 .map(companyMapper::mapToCompanyIdNameDto)
                 .toList();
     }

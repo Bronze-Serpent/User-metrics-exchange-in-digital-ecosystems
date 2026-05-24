@@ -23,10 +23,13 @@ public interface PredicateDataMapper {
             return QPredicates.builder().build();
 
         return QPredicates.builder()
+                .add(userFilter.getUserId(), userEntity.id::eq)
+                .add(userFilter.getUserEmailSubstr(), userEntity.email::contains)
                 .add(userFilter.getUserRole(), userEntity.role::in)
                 .add(userFilter.getLinkedCompanyId(), userEntity.linkedCompany.id::eq)
                 .build();
     }
+
 
     default Predicate mapCompanyFilterToPredicate(CompanyFilter companyFilter) {
         if (companyFilter == null)
@@ -34,16 +37,8 @@ public interface PredicateDataMapper {
 
         return QPredicates.builder()
                 .add(companyFilter.getCompanyNameSubstring(), companyEntity.name::contains)
+                .add(companyFilter.getCompanyId(), companyEntity.id::eq)
                 .add(companyFilter.getSuppUserProfileExchange(), companyEntity.suppUserProfileExchange::eq)
-                .build();
-    }
-
-    default Predicate mapToSupportUserExchangeCompanyFilter(Boolean suppUserProfileExchangeFilter) {
-        if (suppUserProfileExchangeFilter == null)
-            return QPredicates.builder().build();
-
-        return QPredicates.builder()
-                .add(suppUserProfileExchangeFilter, companyEntity.suppUserProfileExchange::eq)
                 .build();
     }
 
