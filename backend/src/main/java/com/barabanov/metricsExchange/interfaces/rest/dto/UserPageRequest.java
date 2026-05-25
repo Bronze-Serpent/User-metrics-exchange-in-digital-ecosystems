@@ -1,7 +1,12 @@
 package com.barabanov.metricsExchange.interfaces.rest.dto;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Data;
 import lombok.experimental.FieldDefaults;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Data
@@ -12,6 +17,6 @@ public class UserPageRequest {
     Integer pageNumber;
     Integer pageSize;
     UserFilter userFilter;
-    UserSortField sortBy;
-    SortOrder sortOrder;
+    @Builder.Default
+    List<SortSpecifier<UserSortField>> sortOrderSpecifiers = new ArrayList<>();
 }

@@ -20,6 +20,8 @@ public class MetricsExchangeApplication {
      * 6. Дополнить ресты различными фильтрами + реализовать сортировки с помощью, в частности, UserSortField
      * 7. Рассмотреть идею написать переопределённых методов set у слоя сущностье для сохранения данных в согласованном виде на уровне java модели (creatingAlliancePoint.setAlliance(alliance); в частности)
      * 8. Сделать TransactionalOutbox для REST триггера компании на выгрузку профиля и для отправок портфолио пользователей в kafka
+     *
+     * Сделать чтобы на панели админа у пользователей показывались не id компании, а именя и возможность сортировки по ним (это добавить связанные сущности в пример с сортировками)
      */
     public static void main(String[] args) {
         SpringApplication.run(MetricsExchangeApplication.class, args);

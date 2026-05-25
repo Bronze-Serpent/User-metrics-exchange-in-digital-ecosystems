@@ -1,21 +1,15 @@
 package com.barabanov.metricsExchange.interfaces.rest.dto;
 
-import com.barabanov.metricsExchange.entity.UserRole;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
-import java.time.OffsetDateTime;
 
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class UserDto {
-
-    Long id;
-    String email;
-    UserRole role;
-    Long linkedCompanyId;
-    OffsetDateTime createdAt;
+public class SortSpecifier<T extends Enum<T>> {
+    T sortBy;
+    SortOrder sortOrder;
 }

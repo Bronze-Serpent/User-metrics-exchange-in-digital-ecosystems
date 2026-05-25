@@ -7,6 +7,7 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
 import com.barabanov.metricsExchange.interfaces.rest.dto.UserDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.UserPageRequest;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
+import com.barabanov.metricsExchange.mapper.SortDataMapper;
 import com.barabanov.metricsExchange.mapper.UserMapper;
 import com.barabanov.metricsExchange.repository.CompanyRepository;
 import com.barabanov.metricsExchange.repository.UserRepository;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ public class UserService {
     private final CompanyRepository companyRepository;
     private final UserMapper userMapper;
     private final PredicateDataMapper predicateDataMapper;
+    private final SortDataMapper sortDataMapper;
 
 
     @Transactional
@@ -48,9 +51,11 @@ public class UserService {
     public PageResponse<UserDto> getUserPage(UserPageRequest userPageRequest) {
         Predicate predicate = predicateDataMapper.mapUserFilterToPredicate(userPageRequest.getUserFilter());
 
-        PageRequest pageRequest = PageRequest.of(Optional.ofNullable(userPageRequest.getPageNumber())
-                .orElseThrow(), Optional.ofNullable(userPageRequest.getPageSize())
-                .orElseThrow());
+        Sort userPageSort = sortDataMapper.mapUserSortSpecifiersToSpringSort(userPageRequest.getSortOrderSpecifiers());
+        PageRequest pageRequest = PageRequest.of(
+                Optional.ofNullable(userPageRequest.getPageNumber()).orElseThrow(),
+                Optional.ofNullable(userPageRequest.getPageSize()).orElseThrow(),
+                userPageSort);
         Page<UserEntity> usersPage = userRepository.findAll(predicate, pageRequest);
 
         return PageResponse.<UserDto>builder()
