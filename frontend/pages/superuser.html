@@ -86,25 +86,35 @@
     <div class="card">
       <h2 class="card-title">Все пользователи системы</h2>
 
-      <!-- Toolbar: sort field + sort order -->
+      <!-- Filters (UserFilter) -->
       <div class="toolbar">
-        <label class="form-label" for="userSortBy" style="margin:0;">Сортировать по:</label>
-        <select id="userSortBy" class="form-control" style="width: auto;">
-          <option value="">— Без сортировки —</option>
-          <option value="ID">ID</option>
-          <option value="EMAIL">Email</option>
-          <option value="ROLE">Роль</option>
-          <option value="LINKED_COMPANY_ID">Компания</option>
+        <input type="number" id="filterUserId" class="form-control"
+               placeholder="ID пользователя" style="max-width: 160px;" />
+        <input type="text" id="filterEmailSubstr" class="form-control"
+               placeholder="Email содержит..." style="max-width: 220px;" />
+        <input type="number" id="filterLinkedCompanyId" class="form-control"
+               placeholder="ID компании" style="max-width: 150px;" />
+        <select id="filterRole" class="form-control" style="width: auto;">
+          <option value="">— Любая роль —</option>
+          <option value="CLIENT">Клиент</option>
+          <option value="COMPANY_AGENT">Представитель компании</option>
+          <option value="COMPANY_ADMIN">Администратор компании</option>
+          <option value="ADMIN">Администратор</option>
+          <option value="SUPER_USER">Суперпользователь</option>
         </select>
+      </div>
 
-        <select id="userSortOrder" class="form-control" style="width: auto;">
-          <option value="ASC">По возрастанию</option>
-          <option value="DESC">По убыванию</option>
-        </select>
+      <!-- Sort builder (sortOrderSpecifiers, в порядке приоритета) -->
+      <div style="margin: 8px 0 4px;">
+        <label class="form-label">Сортировка (применяется в порядке сверху вниз):</label>
+        <div id="sortRows"></div>
+        <button id="addSortBtn" type="button" class="btn btn-secondary btn-sm">+ Добавить сортировку</button>
+      </div>
 
+      <!-- Actions -->
+      <div class="toolbar">
         <button id="usersApplyBtn" class="btn btn-primary btn-sm">Применить</button>
         <button id="usersResetBtn" class="btn btn-secondary btn-sm">Сбросить</button>
-
         <span class="toolbar-spacer"></span>
         <span id="usersCountInfo" class="page-info"></span>
       </div>
@@ -130,7 +140,7 @@
      State
      ============================================================ */
   var state = {
-    /* Map id → name для всех компаний (для отображения в таблице) */
+    /* Map id → name для выпадающего списка компаний в форме создания */
     companiesMap: {},
 
     /* Состояние вкладки "Все пользователи" */
@@ -138,9 +148,16 @@
     usersTotalPages:    0,
     usersTotalElements: 0,
     usersPageSize:      10,
-    usersSortBy:        '',     /* '' = sortBy не отправляется */
-    usersSortOrder:     'ASC'
+    usersFilter:        {},   /* применённый UserFilter */
+    usersSortSpecifiers: []   /* применённый список sortOrderSpecifiers */
   };
+
+  /* Доступные поля сортировки (UserSortField) */
+  var SORT_FIELDS = [
+    ['CREATED_AT', 'Дата создания'],
+    ['EMAIL',      'Email'],
+    ['ROLE',       'Роль']
+  ];
 
   /* Человекочитаемые названия ролей */
   var ROLE_LABELS = {
@@ -165,10 +182,12 @@
       .replace(/"/g, '&quot;');
   }
 
-  /** Возвращает имя компании по id или заглушку */
-  function companyName(id) {
-    if (!id) return '—';
-    return state.companiesMap[id] ? esc(state.companiesMap[id]) : 'Компания #' + id;
+  /** Форматирует дату (ISO / OffsetDateTime) в локальный вид */
+  function formatDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return esc(iso);
+    return esc(d.toLocaleString('ru-RU'));
   }
 
   /** Возвращает человекочитаемое название роли */
@@ -288,10 +307,10 @@
     document.getElementById('usersPagination').innerHTML = '';
 
     Api.getUsers({
-      pageNumber: page,
-      pageSize:   state.usersPageSize,
-      sortBy:     state.usersSortBy,      /* '' → не отправляется */
-      sortOrder:  state.usersSortOrder
+      pageNumber:     page,
+      pageSize:       state.usersPageSize,
+      userFilter:     Object.keys(state.usersFilter).length ? state.usersFilter : undefined,
+      sortSpecifiers: state.usersSortSpecifiers
     })
     .then(function (response) {
       var users = (response && response.data) ? response.data : [];
@@ -315,7 +334,8 @@
           '<td style="width:80px;color:var(--text-muted)">' + esc(u.id) + '</td>' +
           '<td><strong>' + esc(u.email || '—') + '</strong></td>' +
           '<td>' + roleLabel(u.role) + '</td>' +
-          '<td>' + companyName(u.linkedCompanyId) + '</td>' +
+          '<td>' + (u.linkedCompanyId ? esc(u.linkedCompanyId) : '—') + '</td>' +
+          '<td style="color:var(--text-muted)">' + formatDate(u.createdAt) + '</td>' +
         '</tr>';
       }).join('');
 
@@ -326,7 +346,8 @@
               '<th>ID</th>' +
               '<th>Email</th>' +
               '<th>Роль</th>' +
-              '<th>Компания</th>' +
+              '<th>Id компании</th>' +
+              '<th>Дата создания</th>' +
             '</tr></thead>' +
             '<tbody>' + rows + '</tbody>' +
           '</table>' +
@@ -343,19 +364,77 @@
     });
   }
 
-  /* Apply sort */
+  /* ----- Конструктор сортировок (N спецификаторов по приоритету) ----- */
+
+  /** Добавляет строку сортировки. */
+  function addSortRow(field, order) {
+    var fieldOptions = SORT_FIELDS.map(function (f) {
+      var sel = (f[0] === field) ? ' selected' : '';
+      return '<option value="' + f[0] + '"' + sel + '>' + f[1] + '</option>';
+    }).join('');
+
+    var row = document.createElement('div');
+    row.className = 'toolbar sort-row';
+    row.style.marginBottom = '8px';
+    row.innerHTML =
+      '<select class="sort-field form-control" style="width:auto;">' + fieldOptions + '</select>' +
+      '<select class="sort-order form-control" style="width:auto;">' +
+        '<option value="ASC"' + (order === 'DESC' ? '' : ' selected') + '>По возрастанию</option>' +
+        '<option value="DESC"' + (order === 'DESC' ? ' selected' : '') + '>По убыванию</option>' +
+      '</select>' +
+      '<button type="button" class="btn-trash" title="Удалить сортировку">🗑</button>';
+
+    row.querySelector('.btn-trash').addEventListener('click', function () {
+      row.parentNode.removeChild(row);
+    });
+    document.getElementById('sortRows').appendChild(row);
+  }
+
+  /** Собирает sortOrderSpecifiers из строк сортировки (в порядке сверху вниз). */
+  function collectSortSpecifiers() {
+    var specs = [];
+    document.querySelectorAll('#sortRows .sort-row').forEach(function (row) {
+      var field = row.querySelector('.sort-field').value;
+      var order = row.querySelector('.sort-order').value;
+      if (field) specs.push({ sortBy: field, sortOrder: order });
+    });
+    return specs;
+  }
+
+  /** Собирает UserFilter из полей фильтра (только заданные поля). */
+  function collectUserFilter() {
+    var f = {};
+    var userId          = document.getElementById('filterUserId').value.trim();
+    var emailSubstr     = document.getElementById('filterEmailSubstr').value.trim();
+    var linkedCompanyId = document.getElementById('filterLinkedCompanyId').value.trim();
+    var role            = document.getElementById('filterRole').value;
+    if (userId)          f.userId          = Number(userId);
+    if (emailSubstr)     f.userEmailSubstr = emailSubstr;
+    if (linkedCompanyId) f.linkedCompanyId = Number(linkedCompanyId);
+    if (role)            f.userRole        = role;
+    return f;
+  }
+
+  document.getElementById('addSortBtn').addEventListener('click', function () {
+    addSortRow('CREATED_AT', 'ASC');
+  });
+
+  /* Apply filter + sort */
   document.getElementById('usersApplyBtn').addEventListener('click', function () {
-    state.usersSortBy    = document.getElementById('userSortBy').value;
-    state.usersSortOrder = document.getElementById('userSortOrder').value;
+    state.usersFilter         = collectUserFilter();
+    state.usersSortSpecifiers = collectSortSpecifiers();
     loadUsers(0);
   });
 
-  /* Reset sort */
+  /* Reset filter + sort */
   document.getElementById('usersResetBtn').addEventListener('click', function () {
-    document.getElementById('userSortBy').value    = '';
-    document.getElementById('userSortOrder').value = 'ASC';
-    state.usersSortBy    = '';
-    state.usersSortOrder = 'ASC';
+    document.getElementById('filterUserId').value          = '';
+    document.getElementById('filterEmailSubstr').value      = '';
+    document.getElementById('filterLinkedCompanyId').value  = '';
+    document.getElementById('filterRole').value             = '';
+    document.getElementById('sortRows').innerHTML           = '';
+    state.usersFilter         = {};
+    state.usersSortSpecifiers = [];
     loadUsers(0);
   });
 

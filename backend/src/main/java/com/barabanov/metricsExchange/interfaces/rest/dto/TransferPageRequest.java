@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Data
 @Builder
@@ -14,5 +17,6 @@ public class TransferPageRequest {
     Integer pageNumber;
     Integer pageSize;
     TransferFilter transferFilter;
-    SortOrder sortOrder;
+    @Builder.Default
+    List<SortSpecifier<TransferRequestSortField>> sortOrderSpecifiers = new ArrayList<>();
 }

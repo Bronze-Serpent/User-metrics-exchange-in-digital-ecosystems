@@ -8,22 +8,512 @@
 </head>
 <body>
 
-  <header class="page-header">
-    <div class="container">
-      <a href="../index.html" class="btn btn-ghost">← Назад</a>
-      <span class="page-title">🏢 Страница администратора компании</span>
-    </div>
-  </header>
+<!-- ============================================================
+     Header
+     ============================================================ -->
+<header class="page-header">
+  <div class="container">
+    <a href="../index.html" class="btn btn-ghost">← Назад</a>
+    <span class="page-title">🏢 Страница администратора компании</span>
+  </div>
+</header>
 
-  <main class="container">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🚧</div>
-      <h2>Раздел в разработке</h2>
-      <p style="color: var(--text-muted); margin-top: 8px;">
-        Страница администратора компании будет реализована в следующих итерациях.
-      </p>
+<!-- ============================================================
+     Main Content
+     ============================================================ -->
+<main class="container">
+
+  <!-- ========================
+       Filters block
+       ======================== -->
+  <div class="card">
+    <h2 class="card-title">Фильтры</h2>
+
+    <div class="form-grid">
+
+      <!-- Status multi-select -->
+      <div class="form-group">
+        <label class="form-label" for="statusSelect">Статусы</label>
+        <select id="statusSelect" class="form-control">
+          <option value="">+ Добавить статус</option>
+          <option value="NEW">Новая</option>
+          <option value="DECISION_PROCESSING">Обрабатывается</option>
+          <option value="CLOSED">Закрыта</option>
+        </select>
+        <div id="statusChips" class="chips-box"></div>
+      </div>
+
+      <!-- Decision multi-select -->
+      <div class="form-group">
+        <label class="form-label" for="decisionSelect">Типы решений</label>
+        <select id="decisionSelect" class="form-control">
+          <option value="">+ Добавить решение</option>
+          <option value="ACCEPT">Разрешена</option>
+          <option value="REJECT">Отклонена</option>
+        </select>
+        <div id="decisionChips" class="chips-box"></div>
+      </div>
+
+      <!-- ID заявки -->
+      <div class="form-group">
+        <label class="form-label" for="filterId">ID заявки</label>
+        <input type="number" id="filterId" class="form-control" placeholder="Например: 42" />
+      </div>
+
+      <!-- toCompanyId -->
+      <div class="form-group">
+        <label class="form-label" for="filterToCompanyId">ID компании-назначения</label>
+        <input type="number" id="filterToCompanyId" class="form-control" placeholder="toCompanyId" />
+      </div>
+
+      <!-- fromProfileId -->
+      <div class="form-group">
+        <label class="form-label" for="filterFromProfileId">ID профиля пользователя</label>
+        <input type="text" id="filterFromProfileId" class="form-control" placeholder="fromProfileId" />
+      </div>
+
     </div>
-  </main>
+
+    <div class="form-actions">
+      <button id="resetFiltersBtn" type="button" class="btn btn-secondary">Сбросить фильтры</button>
+    </div>
+  </div>
+
+  <!-- ========================
+       Sort block
+       ======================== -->
+  <div class="card">
+    <h2 class="card-title">Сортировки</h2>
+    <p class="hint" style="margin-bottom: 12px;">Применяется в порядке сверху вниз.</p>
+
+    <div id="sortRows"></div>
+    <button id="addSortBtn" type="button" class="btn btn-secondary btn-sm">+ Добавить сортировку</button>
+
+    <div class="form-actions">
+      <button id="resetSortBtn" type="button" class="btn btn-secondary">Сбросить сортировки</button>
+    </div>
+  </div>
+
+  <!-- Единая кнопка применения (к обоим блокам) -->
+  <div class="form-actions" style="margin-bottom: 18px;">
+    <button id="applyBtn" class="btn btn-primary">Применить</button>
+  </div>
+
+  <!-- ========================
+       Results block
+       ======================== -->
+  <div class="card">
+    <div class="toolbar" style="margin-bottom: 0;">
+      <h2 class="card-title" style="margin: 0;">Заявки на перенос, выставленные на компанию</h2>
+      <span class="toolbar-spacer"></span>
+      <span id="requestsCountInfo" class="page-info"></span>
+    </div>
+
+    <div id="requestsContent" style="margin-top: 16px;">
+      <div class="loading">Загрузка заявок...</div>
+    </div>
+    <div class="pagination" id="requestsPagination"></div>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     Modal: Transfer Request decision
+     ============================================================ -->
+<div class="modal-overlay" id="decisionModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="decisionModalTitle">Заявка</h3>
+      <button class="modal-close" id="closeDecisionBtn" aria-label="Закрыть">×</button>
+    </div>
+    <div id="decisionModalContent">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Scripts
+     ============================================================ -->
+<script src="../js/api.js"></script>
+<script>
+  /* ============================================================
+     Временно: id компании администратора зашит явно.
+     В будущем сюда подставится companyId пользователя (после авторизации).
+     Этот фильтр (fromCompanyId) всегда отправляется под капотом
+     и не редактируется на UI.
+     ============================================================ */
+  var COMPANY_ID = 1;
+
+  /* ============================================================
+     State
+     ============================================================ */
+  var state = {
+    page: 0, totalPages: 0, totalElements: 0, pageSize: 10,
+
+    /* Применённые фильтры */
+    statuses:       ['NEW', 'DECISION_PROCESSING'],
+    decisions:      [],
+    fId:            '',
+    fToCompanyId:   '',
+    fFromProfileId: '',
+    sortSpecifiers: [],
+
+    /* Текущий выбор в окошках предпросмотра (до нажатия "Применить") */
+    uiStatuses:  ['NEW', 'DECISION_PROCESSING'],
+    uiDecisions: [],
+
+    decisionId: null   /* id заявки в открытой модалке */
+  };
+
+  /* Доступные поля сортировки заявок */
+  var SORT_FIELDS = [
+    ['STATUS',     'Статус'],
+    ['CREATED_AT', 'Дата создания']
+  ];
+
+  var STATUS_LABELS = {
+    NEW:                 'Новая',
+    DECISION_PROCESSING: 'Обрабатывается',
+    CLOSED:              'Закрыта'
+  };
+  var DECISION_LABELS = {
+    ACCEPT: 'Разрешена',
+    REJECT: 'Отклонена'
+  };
+
+  /* ============================================================
+     Utility helpers
+     ============================================================ */
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return esc(iso);
+    return esc(d.toLocaleString('ru-RU'));
+  }
+
+  function statusBadge(status) {
+    if (!status) return '<span class="badge badge-default">—</span>';
+    var cls = { NEW: 'badge-process', DECISION_PROCESSING: 'badge-process', CLOSED: 'badge-default' };
+    return '<span class="badge ' + (cls[status] || 'badge-default') + '">' +
+      (STATUS_LABELS[status] || esc(status)) + '</span>';
+  }
+
+  function decisionBadge(decision) {
+    if (!decision) return '<span class="badge badge-default">—</span>';
+    var cls = { ACCEPT: 'badge-accept', REJECT: 'badge-reject' };
+    return '<span class="badge ' + (cls[decision] || 'badge-default') + '">' +
+      (DECISION_LABELS[decision] || esc(decision)) + '</span>';
+  }
+
+  function showAlert(containerId, message, type) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (!message) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+  }
+
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function renderPagination(containerId, currentPage, totalPages, handlerName) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    var prevDisabled = currentPage === 0 ? 'disabled' : '';
+    var nextDisabled = currentPage >= totalPages - 1 ? 'disabled' : '';
+    el.innerHTML =
+      '<button class="btn btn-secondary btn-sm" ' + prevDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage - 1) + ')">← Назад</button>' +
+      '<span class="page-info">Страница ' + (currentPage + 1) + ' из ' + totalPages + '</span>' +
+      '<button class="btn btn-secondary btn-sm" ' + nextDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage + 1) + ')">Вперёд →</button>';
+  }
+
+  /* ============================================================
+     Multi-select chips (статусы / типы решений)
+     ============================================================ */
+  function renderChips(containerId, values, labelMap, removeFn) {
+    var el = document.getElementById(containerId);
+    if (!values.length) {
+      el.innerHTML = '<span class="chips-empty">не выбрано</span>';
+      return;
+    }
+    el.innerHTML = values.map(function (v) {
+      return '<span class="chip">' + (labelMap[v] || esc(v)) +
+        '<button type="button" onclick="' + removeFn + '(\'' + v + '\')">×</button></span>';
+    }).join('');
+  }
+  function renderStatusChips()   { renderChips('statusChips',   state.uiStatuses,  STATUS_LABELS,   'removeStatus'); }
+  function renderDecisionChips() { renderChips('decisionChips', state.uiDecisions, DECISION_LABELS, 'removeDecision'); }
+
+  function addStatus(v)    { if (v && state.uiStatuses.indexOf(v) === -1)  { state.uiStatuses.push(v);  renderStatusChips(); } }
+  function removeStatus(v) { state.uiStatuses  = state.uiStatuses.filter(function (x) { return x !== v; });  renderStatusChips(); }
+  function addDecision(v)    { if (v && state.uiDecisions.indexOf(v) === -1) { state.uiDecisions.push(v); renderDecisionChips(); } }
+  function removeDecision(v) { state.uiDecisions = state.uiDecisions.filter(function (x) { return x !== v; }); renderDecisionChips(); }
+
+  document.getElementById('statusSelect').addEventListener('change', function () {
+    addStatus(this.value); this.value = '';
+  });
+  document.getElementById('decisionSelect').addEventListener('change', function () {
+    addDecision(this.value); this.value = '';
+  });
+
+  /* ============================================================
+     Sort builder (множественная сортировка)
+     ============================================================ */
+  function addSortRow(field, order) {
+    var fieldOptions = SORT_FIELDS.map(function (f) {
+      var sel = (f[0] === field) ? ' selected' : '';
+      return '<option value="' + f[0] + '"' + sel + '>' + f[1] + '</option>';
+    }).join('');
+
+    var row = document.createElement('div');
+    row.className = 'toolbar sort-row';
+    row.style.marginBottom = '8px';
+    row.innerHTML =
+      '<select class="sort-field form-control" style="width:auto;">' + fieldOptions + '</select>' +
+      '<select class="sort-order form-control" style="width:auto;">' +
+        '<option value="ASC"' + (order === 'DESC' ? '' : ' selected') + '>По возрастанию</option>' +
+        '<option value="DESC"' + (order === 'DESC' ? ' selected' : '') + '>По убыванию</option>' +
+      '</select>' +
+      '<button type="button" class="btn-trash" title="Удалить сортировку">🗑</button>';
+
+    row.querySelector('.btn-trash').addEventListener('click', function () {
+      row.parentNode.removeChild(row);
+    });
+    document.getElementById('sortRows').appendChild(row);
+  }
+
+  function collectSortSpecifiers() {
+    var specs = [];
+    document.querySelectorAll('#sortRows .sort-row').forEach(function (row) {
+      var field = row.querySelector('.sort-field').value;
+      var order = row.querySelector('.sort-order').value;
+      if (field) specs.push({ sortBy: field, sortOrder: order });
+    });
+    return specs;
+  }
+
+  /* ============================================================
+     Requests list
+     ============================================================ */
+  function loadRequests(page) {
+    if (page === undefined) page = 0;
+    state.page = page;
+    document.getElementById('requestsContent').innerHTML = '<div class="loading">Загрузка...</div>';
+    document.getElementById('requestsPagination').innerHTML = '';
+
+    /* fromCompanyId — всегда под капотом, недоступен для изменения на UI.
+       statuses backend пока игнорирует (нужно добавить в TransferFilter). */
+    var transferFilter = { fromCompanyId: COMPANY_ID };
+    if (state.statuses.length)  transferFilter.statuses     = state.statuses;
+    if (state.decisions.length) transferFilter.decisions    = state.decisions;
+    if (state.fId)              transferFilter.id            = Number(state.fId);
+    if (state.fToCompanyId)     transferFilter.toCompanyId   = Number(state.fToCompanyId);
+    if (state.fFromProfileId)   transferFilter.fromProfileId = state.fFromProfileId;
+
+    Api.getTransferRequests({
+      pageNumber:     page,
+      pageSize:       state.pageSize,
+      transferFilter: transferFilter,
+      sortSpecifiers: state.sortSpecifiers
+    })
+    .then(function (response) {
+      var requests = (response && response.data) ? response.data : [];
+      state.totalPages    = response.totalPages    || 0;
+      state.totalElements = response.totalElements || 0;
+      document.getElementById('requestsCountInfo').textContent = 'Найдено: ' + state.totalElements;
+
+      if (requests.length === 0) {
+        document.getElementById('requestsContent').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Заявки не найдены</p></div>';
+        return;
+      }
+
+      var rows = requests.map(function (t) {
+        return '<tr class="clickable" onclick="openDecision(' + t.id + ')">' +
+          '<td><strong>#' + esc(t.id) + '</strong></td>' +
+          '<td>' + statusBadge(t.status) + '</td>' +
+          '<td>' + decisionBadge(t.decision) + '</td>' +
+          '<td style="color:var(--text-muted)">' + formatDate(t.createdAt) + '</td>' +
+          '<td>' + (t.fromCompanyId ? esc(t.fromCompanyId) : '—') + '</td>' +
+          '<td>' + (t.toCompanyId ? esc(t.toCompanyId) : '—') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('requestsContent').innerHTML =
+        '<div class="table-wrapper"><table>' +
+          '<thead><tr>' +
+            '<th>ID</th><th>Статус</th><th>Решение</th><th>Дата создания</th>' +
+            '<th>Из компании</th><th>В компанию</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+
+      renderPagination('requestsPagination', state.page, state.totalPages, 'loadRequests');
+    })
+    .catch(function (err) {
+      document.getElementById('requestsContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки заявок: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  /* ============================================================
+     Decision modal
+     ============================================================ */
+  function openDecision(id) {
+    state.decisionId = id;
+    document.getElementById('decisionModalTitle').textContent = 'Заявка #' + id;
+    document.getElementById('decisionModalContent').innerHTML = '<div class="loading">Загрузка...</div>';
+    openModal('decisionModal');
+
+    Api.getTransferRequest(id)
+      .then(function (t) {
+        var details =
+          '<div class="detail-grid" style="margin-bottom: 18px;">' +
+            '<div class="detail-item"><div class="detail-label">ID</div>' +
+              '<div class="detail-value"><strong>#' + esc(t.id) + '</strong></div></div>' +
+            '<div class="detail-item"><div class="detail-label">Статус</div>' +
+              '<div class="detail-value">' + statusBadge(t.status) + '</div></div>' +
+            '<div class="detail-item"><div class="detail-label">Текущее решение</div>' +
+              '<div class="detail-value">' + decisionBadge(t.decision) + '</div></div>' +
+            '<div class="detail-item"><div class="detail-label">Дата создания</div>' +
+              '<div class="detail-value">' + formatDate(t.createdAt) + '</div></div>' +
+            '<div class="detail-item"><div class="detail-label">Из компании</div>' +
+              '<div class="detail-value">' + (t.fromCompanyId ? esc(t.fromCompanyId) : '—') + '</div></div>' +
+            '<div class="detail-item"><div class="detail-label">В компанию</div>' +
+              '<div class="detail-value">' + (t.toCompanyId ? esc(t.toCompanyId) : '—') + '</div></div>' +
+            '<div class="detail-item"><div class="detail-label">Профиль-источник</div>' +
+              '<div class="detail-value">' + esc(t.fromProfileId || '—') + '</div></div>' +
+            '<div class="detail-item"><div class="detail-label">Профиль-назначение</div>' +
+              '<div class="detail-value">' + esc(t.toProfileId || '—') + '</div></div>' +
+            (t.comment ?
+              '<div class="detail-item span-2"><div class="detail-label">Комментарий заявителя</div>' +
+                '<div class="detail-value">' + esc(t.comment) + '</div></div>' : '') +
+            (t.decisionComment ?
+              '<div class="detail-item span-2"><div class="detail-label">Комментарий к решению</div>' +
+                '<div class="detail-value">' + esc(t.decisionComment) + '</div></div>' : '') +
+          '</div>';
+
+        var actions;
+        if (t.decision) {
+          actions = '<div class="alert alert-warning">По заявке уже вынесено решение.</div>';
+        } else {
+          actions =
+            '<div class="form-group" style="margin-bottom: 14px;">' +
+              '<label class="form-label" for="decisionComment">Комментарий к решению</label>' +
+              '<textarea id="decisionComment" class="form-control" rows="3" ' +
+                'placeholder="Необязательно"></textarea>' +
+            '</div>' +
+            '<div id="decisionAlert"></div>' +
+            '<div class="form-actions" style="justify-content: flex-end;">' +
+              '<button type="button" id="rejectBtn" class="btn btn-danger">Отказать</button>' +
+              '<button type="button" id="acceptBtn" class="btn btn-primary">Разрешить</button>' +
+            '</div>';
+        }
+
+        document.getElementById('decisionModalContent').innerHTML = details + actions;
+
+        if (!t.decision) {
+          document.getElementById('acceptBtn').addEventListener('click', function () { submitDecision('ACCEPT'); });
+          document.getElementById('rejectBtn').addEventListener('click', function () { submitDecision('REJECT'); });
+        }
+      })
+      .catch(function (err) {
+        document.getElementById('decisionModalContent').innerHTML =
+          '<div class="alert alert-error">Ошибка загрузки заявки: ' + esc(err.message) + '</div>';
+      });
+  }
+
+  function submitDecision(decision) {
+    var acceptBtn = document.getElementById('acceptBtn');
+    var rejectBtn = document.getElementById('rejectBtn');
+    var comment   = document.getElementById('decisionComment').value.trim();
+
+    acceptBtn.disabled = true; rejectBtn.disabled = true;
+
+    Api.makeTransferDecision(state.decisionId, {
+      decision:        decision,
+      decisionComment: comment
+    })
+    .then(function () {
+      closeModal('decisionModal');
+      state.decisionId = null;
+      loadRequests(state.page);
+    })
+    .catch(function (err) {
+      showAlert('decisionAlert', 'Ошибка: ' + esc(err.message), 'error');
+      acceptBtn.disabled = false; rejectBtn.disabled = false;
+    });
+  }
+
+  /* ============================================================
+     Toolbar handlers
+     ============================================================ */
+  document.getElementById('addSortBtn').addEventListener('click', function () {
+    addSortRow('CREATED_AT', 'DESC');
+  });
+
+  document.getElementById('applyBtn').addEventListener('click', function () {
+    state.statuses       = state.uiStatuses.slice();
+    state.decisions      = state.uiDecisions.slice();
+    state.fId            = document.getElementById('filterId').value.trim();
+    state.fToCompanyId   = document.getElementById('filterToCompanyId').value.trim();
+    state.fFromProfileId = document.getElementById('filterFromProfileId').value.trim();
+    state.sortSpecifiers = collectSortSpecifiers();
+    loadRequests(0);
+  });
+
+  /* Сброс только фильтров (без перезагрузки — применится по "Применить") */
+  document.getElementById('resetFiltersBtn').addEventListener('click', function () {
+    /* статусы по умолчанию: NEW + DECISION_PROCESSING; решения — пусто */
+    state.uiStatuses  = ['NEW', 'DECISION_PROCESSING'];
+    state.uiDecisions = [];
+    renderStatusChips();
+    renderDecisionChips();
+
+    document.getElementById('filterId').value            = '';
+    document.getElementById('filterToCompanyId').value   = '';
+    document.getElementById('filterFromProfileId').value = '';
+  });
+
+  /* Сброс только сортировок (без перезагрузки — применится по "Применить") */
+  document.getElementById('resetSortBtn').addEventListener('click', function () {
+    document.getElementById('sortRows').innerHTML = '';
+  });
+
+  /* ============================================================
+     Modal close handlers (× / overlay / Escape)
+     ============================================================ */
+  document.getElementById('closeDecisionBtn').addEventListener('click', function () {
+    closeModal('decisionModal');
+  });
+  document.getElementById('decisionModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(function (m) {
+        m.classList.remove('open');
+      });
+    }
+  });
+
+  /* ============================================================
+     Initialization
+     ============================================================ */
+  renderStatusChips();
+  renderDecisionChips();
+  loadRequests(0);   /* применённые фильтры по умолчанию уже заданы в state */
+</script>
 
 </body>
 </html>

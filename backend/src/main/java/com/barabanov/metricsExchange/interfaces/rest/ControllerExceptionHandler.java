@@ -88,7 +88,7 @@ public class ControllerExceptionHandler {
 
 
     private String getRequestBodyAsString(HttpServletRequest httpRequest) {
-        //TODO: wrapper как будто не работает, проверить (особенно если не был вычитан текст и когда вычитан тоже)
+        //TODO: wrapper как будто не работает, проверить (особенно если не был вычитан текст и когда вычитан тоже) + Отдельно проверить будет ли работать этот обработчик при ошибках десериализации
         try {
             ContentCachingRequestWrapper httpRequestWrapper = (ContentCachingRequestWrapper) httpRequest;
             String requestBodyAsStr = httpRequestWrapper.getContentAsString();

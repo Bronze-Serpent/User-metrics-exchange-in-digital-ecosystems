@@ -2,13 +2,13 @@ package com.barabanov.metricsExchange.service;
 
 import com.barabanov.metricsExchange.entity.CompanyEntity;
 import com.barabanov.metricsExchange.entity.TransferRequestEntity;
-import com.barabanov.metricsExchange.entity.TransferStatus;
 import com.barabanov.metricsExchange.entity.UserEntity;
 import com.barabanov.metricsExchange.external.CompanyWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.kafka.KafkaSender;
 import com.barabanov.metricsExchange.kafka.dto.UserPortfolioEvent;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
+import com.barabanov.metricsExchange.mapper.SortDataMapper;
 import com.barabanov.metricsExchange.mapper.TransferRequestMapper;
 import com.barabanov.metricsExchange.repository.CompanyRepository;
 import com.barabanov.metricsExchange.repository.TransferRequestRepository;
@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class TransferRequestService {
     private final UserRepository userRepository;
     private final TransferRequestMapper transferRequestMapper;
     private final PredicateDataMapper predicateDataMapper;
+    private final SortDataMapper sortDataMapper;
     private final KafkaSender kafkaSender;
     private final CompanyWebClient companyWebClient;
 
@@ -91,9 +93,11 @@ public class TransferRequestService {
     public PageResponse<TransferRqDto> getTransferRqPage(TransferPageRequest transferPageRequest) {
         Predicate predicate = predicateDataMapper.mapTransferFilterToPredicate(transferPageRequest.getTransferFilter());
 
-        PageRequest pageRequest = PageRequest.of(Optional.ofNullable(transferPageRequest.getPageNumber())
-                .orElseThrow(), Optional.ofNullable(transferPageRequest.getPageSize())
-                .orElseThrow());
+        Sort transferRqPageSort = sortDataMapper.mapTransferRqSortSpecifiersToSpringSort(transferPageRequest.getSortOrderSpecifiers());
+        PageRequest pageRequest = PageRequest.of(
+                Optional.ofNullable(transferPageRequest.getPageNumber()).orElseThrow(),
+                Optional.ofNullable(transferPageRequest.getPageSize()).orElseThrow(),
+                transferRqPageSort);
         Page<TransferRequestEntity> transfersPage = transferRequestRepository.findAll(predicate, pageRequest);
 
         return PageResponse.<TransferRqDto>builder()

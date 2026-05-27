@@ -73,6 +73,7 @@ public interface PredicateDataMapper {
                 .add(transferFilter.getId(), transferRequestEntity.id::eq)
                 .add(transferFilter.getFromProfileId(), transferRequestEntity.fromProfileId::eq)
                 .add(transferFilter.getToProfileId(), transferRequestEntity.toProfileId::eq)
+                .add(transferFilter.getStatuses(), transferRequestEntity.status::in)
                 .add(transferFilter.getDecisions(), transferRequestEntity.decision::in)
                 .add(transferFilter.getFromCompanyId(), transferRequestEntity.fromCompany.id::eq)
                 .add(transferFilter.getToCompanyId(), transferRequestEntity.toCompany.id::eq)

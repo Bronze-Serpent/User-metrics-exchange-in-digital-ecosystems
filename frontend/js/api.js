@@ -156,19 +156,33 @@ var Api = (function () {
     },
 
     /**
-     * Получить список заявок с пагинацией (всегда сортировка DESC по дате).
+     * Получить список заявок с пагинацией, фильтром и сортировкой.
      * @param {object} opts
-     * @param {number} opts.pageNumber
-     * @param {number} opts.pageSize
+     * @param {number}  opts.pageNumber
+     * @param {number}  opts.pageSize
+     * @param {object}  [opts.transferFilter]  - фильтр (TransferFilter): fromCompanyId,
+     *   toCompanyId, decisions, а также statuses (последнее backend пока игнорирует —
+     *   нужно добавить в TransferFilter).
+     * @param {string}  [opts.sortOrder='DESC'] - одиночный порядок (текущее поле backend).
+     * @param {Array}   [opts.sortSpecifiers]   - множественная сортировка
+     *   (sortOrderSpecifiers) в порядке приоритета: { sortBy, sortOrder }.
+     *   Backend пока не поддерживает — игнорирует (добавится позже).
      */
     getTransferRequests: function (opts) {
       opts = opts || {};
-      // Эндпоинт принимает @RequestBody → отправляем JSON
-      return postJson('/user-exchange-metrics/transfer-requests', {
+      var data = {
         pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
         pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10,
-        sortOrder: 'DESC'
-      });
+        sortOrder:  opts.sortOrder || 'DESC'
+      };
+      if (opts.transferFilter) {
+        data.transferFilter = opts.transferFilter;
+      }
+      if (opts.sortSpecifiers && opts.sortSpecifiers.length) {
+        data.sortOrderSpecifiers = opts.sortSpecifiers;
+      }
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/transfer-requests', data);
     },
 
     /**
@@ -177,6 +191,17 @@ var Api = (function () {
      */
     getTransferRequest: function (id) {
       return get('/user-exchange-metrics/transfer-request/' + id);
+    },
+
+    /**
+     * Вынести решение по заявке (разрешить / отказать).
+     * @param {number|string} transferRequestId
+     * @param {object} payload - поля TransferDecisionDto:
+     *   decision ('ACCEPT' | 'REJECT'), decisionComment (необязательно)
+     */
+    makeTransferDecision: function (transferRequestId, payload) {
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/transfer-request/' + transferRequestId + '/decision', payload);
     },
 
     /**
@@ -190,30 +215,27 @@ var Api = (function () {
     },
 
     /**
-     * Получить список пользователей с пагинацией и сортировкой.
+     * Получить список пользователей с пагинацией, фильтром и сортировкой.
      * @param {object} opts
-     * @param {number} opts.pageNumber
-     * @param {number} opts.pageSize
-     * @param {string} [opts.sortBy]     - поле сортировки (UserSortField).
-     *   Передаётся только если задано; иначе не отправляется, чтобы избежать
-     *   ошибки десериализации пока enum UserSortField на backend не заполнен.
-     * @param {string} opts.sortOrder    - 'ASC' | 'DESC'
-     * @param {object} [opts.userFilter] - фильтр (UserFilter): linkedCompanyId,
-     *   userRole, а также userId и userEmailSubstr (последние два backend пока
-     *   игнорирует — их нужно добавить в UserFilter).
+     * @param {number}  opts.pageNumber
+     * @param {number}  opts.pageSize
+     * @param {object}  [opts.userFilter]      - фильтр (UserFilter): userId,
+     *   userEmailSubstr, linkedCompanyId, userRole.
+     * @param {Array}   [opts.sortSpecifiers]  - список спецификаторов сортировки
+     *   (sortOrderSpecifiers) в порядке приоритета. Каждый элемент:
+     *   { sortBy: UserSortField ('CREATED_AT'|'EMAIL'|'ROLE'), sortOrder: 'ASC'|'DESC' }.
      */
     getUsers: function (opts) {
       opts = opts || {};
       var data = {
         pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
-        pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10,
-        sortOrder:  opts.sortOrder  || 'ASC'
+        pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10
       };
-      if (opts.sortBy) {
-        data.sortBy = opts.sortBy;
-      }
       if (opts.userFilter) {
         data.userFilter = opts.userFilter;
+      }
+      if (opts.sortSpecifiers && opts.sortSpecifiers.length) {
+        data.sortOrderSpecifiers = opts.sortSpecifiers;
       }
       // Эндпоинт принимает @RequestBody → отправляем JSON
       return postJson('/user-exchange-metrics/users', data);
