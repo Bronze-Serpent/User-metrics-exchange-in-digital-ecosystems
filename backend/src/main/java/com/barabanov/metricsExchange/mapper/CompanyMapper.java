@@ -5,7 +5,6 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.CompanyDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.CompanyIdNameDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.CreateCompanyDto;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 

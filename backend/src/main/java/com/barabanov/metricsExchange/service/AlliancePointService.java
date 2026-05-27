@@ -7,26 +7,25 @@ import com.barabanov.metricsExchange.entity.PointStatus;
 import com.barabanov.metricsExchange.external.UserMetricsWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointCreateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
-import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointPageRequest;
-import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
+import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointUpdateDto;
 import com.barabanov.metricsExchange.mapper.AlliancePointMapper;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
 import com.barabanov.metricsExchange.repository.AlliancePointRepository;
 import com.barabanov.metricsExchange.repository.AllianceRepository;
 import com.barabanov.metricsExchange.repository.CompanyPointRepository;
-import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -110,28 +109,18 @@ public class AlliancePointService {
 
 
     @Transactional
-    public void deleteAlliancePointInfo(Long alliancePointId) {
-        alliancePointRepository.deleteById(alliancePointId);
+    public AlliancePointDto updateAlliancePointDto(Long alliancePointId, AlliancePointUpdateDto alliancePointUpdateDto) {
+        AlliancePointEntity updatingAlliancePoint = alliancePointRepository.findById(alliancePointId)
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти точку альянса с id: %s", alliancePointId)));
+        alliancePointMapper.mergeUpdateToEntity(alliancePointUpdateDto, updatingAlliancePoint);
+
+        return alliancePointMapper.mapToAlliancePointDto(alliancePointRepository.save(updatingAlliancePoint));
     }
 
 
-    @Transactional(readOnly = true)
-    public PageResponse<AlliancePointDto> getAlliancePointsPage(AlliancePointPageRequest alliancePointPageRequest) {
-        Predicate predicate = predicateDataMapper.mapAlliancePointFilterToPredicate(alliancePointPageRequest.getAlliancePointFilter());
-
-        PageRequest pageRequest = PageRequest.of(Optional.ofNullable(alliancePointPageRequest.getPageNumber())
-                .orElseThrow(), Optional.ofNullable(alliancePointPageRequest.getPageSize())
-                .orElseThrow());
-        Page<AlliancePointEntity> alliancePointsPage = alliancePointRepository.findAll(predicate, pageRequest);
-
-
-        return PageResponse.<AlliancePointDto>builder()
-                .data(alliancePointsPage.getContent().stream().map(alliancePointMapper::mapToAlliancePointDto)
-                        .toList())
-                .pageNumber(alliancePointsPage.getNumber())
-                .totalElements(alliancePointsPage.getTotalElements())
-                .totalPages(alliancePointsPage.getTotalPages())
-                .build();
+    @Transactional
+    public void deleteAlliancePointInfo(Long alliancePointId) {
+        alliancePointRepository.deleteById(alliancePointId);
     }
 
 

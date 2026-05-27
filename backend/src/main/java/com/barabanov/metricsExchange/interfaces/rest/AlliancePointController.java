@@ -2,8 +2,7 @@ package com.barabanov.metricsExchange.interfaces.rest;
 
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointCreateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
-import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointPageRequest;
-import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
+import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointUpdateDto;
 import com.barabanov.metricsExchange.service.AlliancePointService;
 import com.barabanov.metricsExchange.service.UserMetricsDto;
 import lombok.RequiredArgsConstructor;
@@ -30,9 +29,15 @@ public class AlliancePointController {
 
 
     // Рест на получение информации о точке в альянсе
-    @PostMapping("/alliance-point/{alliancePointId}")
-    public AlliancePointDto createAlliancePoint(@PathVariable Long alliancePointId) {
+    @GetMapping("/alliance-point/{alliancePointId}")
+    public AlliancePointDto getAlliancePoint(@PathVariable Long alliancePointId) {
         return alliancePointService.getAlliancePointInfo(alliancePointId);
+    }
+
+    // Рест на обновление статуса точки альянса
+    @PutMapping("/alliance-point/{alliancePointId}")
+    public AlliancePointDto updateAlliancePoint(@PathVariable Long alliancePointId, @RequestBody AlliancePointUpdateDto alliancePointUpdateDto) {
+        return alliancePointService.updateAlliancePointDto(alliancePointId, alliancePointUpdateDto);
     }
 
 
@@ -42,15 +47,6 @@ public class AlliancePointController {
     public void deleteAlliancePoint(@PathVariable Long alliancePointId) {
         alliancePointService.deleteAlliancePointInfo(alliancePointId);
     }
-
-
-    // Рест на просмотре всех точек с фильтрацией (по allianceId минимум)
-    // Рест на удаления связи (точки) в альянсе
-    @PostMapping("/alliance-points")
-    public PageResponse<AlliancePointDto> deleteAlliancePoint(AlliancePointPageRequest alliancePointPageRequest) {
-        return alliancePointService.getAlliancePointsPage(alliancePointPageRequest);
-    }
-
 
     // Рест на добавление точки компании в точку альянса
     @PostMapping("/alliance-point/{alliancePointId}/add-company-point")
@@ -71,6 +67,5 @@ public class AlliancePointController {
     public UserMetricsDto getUserMetrics(@PathVariable Long alliancePointId, @RequestParam MultiValueMap<String, String> requesterParameters) {
         return alliancePointService.getUserMetricsFrom(alliancePointId, requesterParameters);
     }
-
 
 }

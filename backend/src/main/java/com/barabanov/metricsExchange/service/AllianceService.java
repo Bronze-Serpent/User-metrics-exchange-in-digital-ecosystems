@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,11 +60,11 @@ public class AllianceService {
 
 
     @Transactional
-    public AllianceDto updateAlliance(Long allianceId, UpdateAllianceDto updateAllianceDto) {
+    public AllianceDto updateAlliance(Long allianceId, AllianceUpdateDto allianceUpdateDto) {
         AllianceEntity allianceEntity = allianceRepository.findById(allianceId)
                 .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти альянс с id: %s", allianceId)));
 
-        allianceMapper.mergeUpdateToEntity(updateAllianceDto, allianceEntity);
+        allianceMapper.mergeUpdateToEntity(allianceUpdateDto, allianceEntity);
         return null;
     }
 

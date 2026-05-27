@@ -8,22 +8,361 @@
 </head>
 <body>
 
-  <header class="page-header">
-    <div class="container">
-      <a href="../index.html" class="btn btn-ghost">← Назад</a>
-      <span class="page-title">⚙️ Страница администратора приложения</span>
-    </div>
-  </header>
+<!-- ============================================================
+     Header
+     ============================================================ -->
+<header class="page-header">
+  <div class="container">
+    <a href="../index.html" class="btn btn-ghost">← Назад</a>
+    <span class="page-title">⚙️ Страница администратора приложения</span>
+  </div>
+</header>
 
-  <main class="container">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🚧</div>
-      <h2>Раздел в разработке</h2>
-      <p style="color: var(--text-muted); margin-top: 8px;">
-        Страница администратора приложения будет реализована в следующих итерациях.
-      </p>
+<!-- ============================================================
+     Main Content
+     ============================================================ -->
+<main class="container">
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="register">🏢 Регистрация компании</button>
+    <button class="tab-btn"        data-tab="alliances">🤝 Альянсы</button>
+  </div>
+
+  <!-- ========================================================
+       Tab 1: Регистрация компании
+       ======================================================== -->
+  <div class="tab-panel active" id="tab-register">
+
+    <!-- Create company -->
+    <div class="card">
+      <h2 class="card-title">Создание компании</h2>
+      <form id="createCompanyForm" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="companyName">Название *</label>
+            <input type="text" id="companyName" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="companyImportTopic">Топик импорта профилей</label>
+            <input type="text" id="companyImportTopic" class="form-control"
+                   placeholder="userProfileImportTopicName" />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="companyDescription">Описание</label>
+            <textarea id="companyDescription" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="companyExportUrl">URL экспорта портфолио</label>
+            <input type="text" id="companyExportUrl" class="form-control"
+                   placeholder="triggerUrlForExportUserPortfolio" />
+          </div>
+          <div class="form-group full-width">
+            <label class="cb-label">
+              <input type="checkbox" id="companySuppExchange" />
+              Поддерживает перенос профилей пользователей
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="submitCompanyBtn" class="btn btn-primary">Создать компанию</button>
+          <div id="createCompanyAlert"></div>
+        </div>
+      </form>
     </div>
-  </main>
+
+    <!-- Create company agent (owner) -->
+    <div class="card">
+      <h2 class="card-title">Создание представителя компании</h2>
+      <form id="createAgentForm" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="agentEmail">Email *</label>
+            <input type="email" id="agentEmail" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="agentPassword">Пароль *</label>
+            <input type="password" id="agentPassword" class="form-control" required />
+            <span class="hint">Будет использован backend позже</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="agentCompanyId">ID компании (linkedCompanyId) *</label>
+            <input type="number" id="agentCompanyId" class="form-control"
+                   placeholder="ID из созданной выше компании" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="submitAgentBtn" class="btn btn-primary">Создать представителя</button>
+          <div id="createAgentAlert"></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       Tab 2: Альянсы
+       ======================================================== -->
+  <div class="tab-panel" id="tab-alliances">
+
+    <!-- Create alliance -->
+    <div class="card">
+      <div class="toolbar" style="margin-bottom: 0;">
+        <h2 class="card-title" style="margin: 0;">Создание альянса</h2>
+        <span class="toolbar-spacer"></span>
+        <button id="toggleAllianceFormBtn" type="button" class="btn btn-primary btn-sm">➕ Создать альянс</button>
+      </div>
+      <form id="createAllianceForm" class="hidden" novalidate style="margin-top: 18px;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="allianceName">Название *</label>
+            <input type="text" id="allianceName" class="form-control" required />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="allianceDescription">Описание</label>
+            <textarea id="allianceDescription" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="submitAllianceBtn" class="btn btn-primary">Создать альянс</button>
+          <div id="createAllianceAlert"></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Alliances list -->
+    <div class="card">
+      <div class="toolbar">
+        <input type="text" id="allianceNameFilter" class="form-control"
+               placeholder="Поиск по названию..." style="max-width: 240px;" />
+        <input type="number" id="allianceIdFilter" class="form-control"
+               placeholder="ID альянса" style="max-width: 140px;" />
+        <button id="alliancesSearchBtn" class="btn btn-primary btn-sm">Найти</button>
+        <button id="alliancesResetBtn"  class="btn btn-secondary btn-sm">Сбросить</button>
+        <span class="toolbar-spacer"></span>
+        <span id="alliancesCountInfo" class="page-info"></span>
+      </div>
+      <div id="alliancesContent"><div class="loading">Загрузка альянсов...</div></div>
+      <div class="pagination" id="alliancesPagination"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     Scripts
+     ============================================================ -->
+<script src="../js/api.js"></script>
+<script>
+  /* ============================================================
+     State
+     ============================================================ */
+  var state = {
+    /* Альянсы */
+    alPage: 0, alTotalPages: 0, alTotalElements: 0, alPageSize: 10,
+    alNameFilter: '', alIdFilter: ''
+  };
+
+  /* ============================================================
+     Utility helpers
+     ============================================================ */
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function showAlert(containerId, message, type) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (!message) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+  }
+
+  function renderPagination(containerId, currentPage, totalPages, handlerName) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    var prevDisabled = currentPage === 0 ? 'disabled' : '';
+    var nextDisabled = currentPage >= totalPages - 1 ? 'disabled' : '';
+    el.innerHTML =
+      '<button class="btn btn-secondary btn-sm" ' + prevDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage - 1) + ')">← Назад</button>' +
+      '<span class="page-info">Страница ' + (currentPage + 1) + ' из ' + totalPages + '</span>' +
+      '<button class="btn btn-secondary btn-sm" ' + nextDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage + 1) + ')">Вперёд →</button>';
+  }
+
+  /* ============================================================
+     (1) Регистрация компании
+     ============================================================ */
+  document.getElementById('createCompanyForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn  = document.getElementById('submitCompanyBtn');
+    var name = document.getElementById('companyName').value.trim();
+    showAlert('createCompanyAlert', '', 'success');
+    if (!name) { showAlert('createCompanyAlert', 'Укажите название компании.', 'error'); return; }
+
+    btn.disabled = true; btn.textContent = 'Создание...';
+    Api.createCompany({
+      name:                            name,
+      description:                     document.getElementById('companyDescription').value.trim(),
+      suppUserProfileExchange:         document.getElementById('companySuppExchange').checked,
+      userProfileImportTopicName:      document.getElementById('companyImportTopic').value.trim(),
+      triggerUrlForExportUserPortfolio: document.getElementById('companyExportUrl').value.trim()
+    })
+    .then(function (company) {
+      showAlert('createCompanyAlert',
+        '✓ Компания создана. <strong>ID компании: ' + esc(company.id) +
+        '</strong> — понадобится для создания представителя.', 'success');
+      document.getElementById('createCompanyForm').reset();
+    })
+    .catch(function (err) {
+      showAlert('createCompanyAlert', 'Ошибка: ' + esc(err.message), 'error');
+    })
+    .finally(function () { btn.disabled = false; btn.textContent = 'Создать компанию'; });
+  });
+
+  document.getElementById('createAgentForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn       = document.getElementById('submitAgentBtn');
+    var email     = document.getElementById('agentEmail').value.trim();
+    var password  = document.getElementById('agentPassword').value;
+    var companyId = document.getElementById('agentCompanyId').value.trim();
+
+    showAlert('createAgentAlert', '', 'success');
+    if (!email)     { showAlert('createAgentAlert', 'Укажите email.', 'error'); return; }
+    if (!password)  { showAlert('createAgentAlert', 'Укажите пароль.', 'error'); return; }
+    if (!companyId) { showAlert('createAgentAlert', 'Укажите ID компании.', 'error'); return; }
+
+    btn.disabled = true; btn.textContent = 'Создание...';
+    /* role задаётся под капотом как COMPANY_AGENT; password backend пока игнорирует */
+    Api.createUser({
+      email:           email,
+      password:        password,
+      role:            'COMPANY_AGENT',
+      linkedCompanyId: Number(companyId)
+    })
+    .then(function (user) {
+      showAlert('createAgentAlert',
+        '✓ Представитель <strong>#' + esc(user.id) + '</strong> (' + esc(user.email) + ') создан!', 'success');
+      document.getElementById('createAgentForm').reset();
+    })
+    .catch(function (err) {
+      showAlert('createAgentAlert', 'Ошибка: ' + esc(err.message), 'error');
+    })
+    .finally(function () { btn.disabled = false; btn.textContent = 'Создать представителя'; });
+  });
+
+  /* ============================================================
+     (2) Альянсы
+     ============================================================ */
+  document.getElementById('createAllianceForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn  = document.getElementById('submitAllianceBtn');
+    var name = document.getElementById('allianceName').value.trim();
+    showAlert('createAllianceAlert', '', 'success');
+    if (!name) { showAlert('createAllianceAlert', 'Укажите название альянса.', 'error'); return; }
+
+    btn.disabled = true; btn.textContent = 'Создание...';
+    Api.createAlliance({
+      name:        name,
+      description: document.getElementById('allianceDescription').value.trim()
+    })
+    .then(function (alliance) {
+      showAlert('createAllianceAlert',
+        '✓ Альянс <strong>#' + esc(alliance.id) + '</strong> создан!', 'success');
+      document.getElementById('createAllianceForm').reset();
+      loadAlliances(0);
+    })
+    .catch(function (err) {
+      showAlert('createAllianceAlert', 'Ошибка: ' + esc(err.message), 'error');
+    })
+    .finally(function () { btn.disabled = false; btn.textContent = 'Создать альянс'; });
+  });
+
+  function loadAlliances(page) {
+    if (page === undefined) page = 0;
+    state.alPage = page;
+    document.getElementById('alliancesContent').innerHTML = '<div class="loading">Загрузка...</div>';
+    document.getElementById('alliancesPagination').innerHTML = '';
+
+    Api.getAlliances({
+      pageNumber: page,
+      pageSize:   state.alPageSize,
+      nameFilter: state.alNameFilter,
+      allianceId: state.alIdFilter
+    })
+    .then(function (response) {
+      var alliances = (response && response.data) ? response.data : [];
+      state.alTotalPages    = response.totalPages    || 0;
+      state.alTotalElements = response.totalElements || 0;
+      document.getElementById('alliancesCountInfo').textContent = 'Найдено: ' + state.alTotalElements;
+
+      if (alliances.length === 0) {
+        document.getElementById('alliancesContent').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">🤝</div><p>Альянсы не найдены</p></div>';
+        return;
+      }
+
+      var rows = alliances.map(function (a) {
+        return '<tr class="clickable" onclick="openAlliancePage(' + a.id + ')">' +
+          '<td style="width:80px;color:var(--text-muted)">' + esc(a.id) + '</td>' +
+          '<td><strong>' + esc(a.name || '—') + '</strong></td>' +
+          '<td>' + esc(a.description || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('alliancesContent').innerHTML =
+        '<div class="table-wrapper"><table>' +
+          '<thead><tr><th>ID</th><th>Название</th><th>Описание</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+
+      renderPagination('alliancesPagination', state.alPage, state.alTotalPages, 'loadAlliances');
+    })
+    .catch(function (err) {
+      document.getElementById('alliancesContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки альянсов: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  document.getElementById('alliancesSearchBtn').addEventListener('click', function () {
+    state.alNameFilter = document.getElementById('allianceNameFilter').value.trim();
+    state.alIdFilter   = document.getElementById('allianceIdFilter').value.trim();
+    loadAlliances(0);
+  });
+  document.getElementById('alliancesResetBtn').addEventListener('click', function () {
+    document.getElementById('allianceNameFilter').value = '';
+    document.getElementById('allianceIdFilter').value   = '';
+    state.alNameFilter = ''; state.alIdFilter = '';
+    loadAlliances(0);
+  });
+
+  /* Свёртывание/разворачивание формы создания альянса */
+  document.getElementById('toggleAllianceFormBtn').addEventListener('click', function () {
+    document.getElementById('createAllianceForm').classList.toggle('hidden');
+  });
+
+  /* Открывает отдельную страницу альянса в новой вкладке */
+  function openAlliancePage(id) {
+    window.open('alliance.html?id=' + encodeURIComponent(id), '_blank');
+  }
+
+  /* ============================================================
+     Tab switching
+     ============================================================ */
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+      var panel = document.getElementById('tab-' + btn.dataset.tab);
+      if (panel) panel.classList.add('active');
+
+      if (btn.dataset.tab === 'alliances') loadAlliances(0);
+    });
+  });
+</script>
 
 </body>
 </html>

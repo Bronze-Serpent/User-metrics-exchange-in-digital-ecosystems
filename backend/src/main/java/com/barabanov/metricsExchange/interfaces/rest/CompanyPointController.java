@@ -56,7 +56,7 @@ public class CompanyPointController {
 
 
     // Рест на обновление статуса компании
-    @PostMapping("/company-points/{companyPointId}")
+    @PutMapping("/company-points/{companyPointId}")
     public CompanyPointDto updateCompanyPoint(@PathVariable Long companyPointId, CompanyPointUpdateDto companyPointUpdateDto) {
 
         log.info("Получен запрос на обновление точки компании");

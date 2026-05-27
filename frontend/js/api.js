@@ -10,13 +10,22 @@ var API_BASE = 'http://localhost:8080';
 var Api = (function () {
   'use strict';
 
+  /** Бросает ошибку с телом ответа, если статус не ok. Иначе возвращает JSON. */
+  async function handle(res) {
+    if (!res.ok) {
+      var text = await res.text().catch(function () { return 'Нет деталей'; });
+      throw new Error('HTTP ' + res.status + ': ' + text);
+    }
+    return res.json();
+  }
+
   /**
-   * Отправляет POST-запрос с телом application/x-www-form-urlencoded.
+   * Отправляет form-encoded запрос (по умолчанию POST).
    * Вложенные объекты превращаются в dot-notation:
    *   { companyFilter: { companyNameSubstring: 'foo' } }
    *   → companyFilter.companyNameSubstring=foo
    */
-  async function postForm(url, data) {
+  async function sendForm(method, url, data) {
     var params = new URLSearchParams();
 
     function flatten(obj, prefix) {
@@ -36,41 +45,39 @@ var Api = (function () {
     flatten(data, '');
 
     var res = await fetch(API_BASE + url, {
-      method: 'POST',
+      method: method,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString()
     });
-
-    if (!res.ok) {
-      var text = await res.text().catch(function () { return 'Нет деталей'; });
-      throw new Error('HTTP ' + res.status + ': ' + text);
-    }
-    return res.json();
+    return handle(res);
   }
 
-  /** Отправляет POST-запрос с телом application/json. */
-  async function postJson(url, data) {
+  function postForm(url, data) { return sendForm('POST', url, data); }
+  function putForm(url, data)  { return sendForm('PUT',  url, data); }
+
+  /** Отправляет запрос с телом application/json (по умолчанию POST). */
+  async function sendJson(method, url, data) {
     var res = await fetch(API_BASE + url, {
-      method: 'POST',
+      method: method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    return handle(res);
+  }
 
-    if (!res.ok) {
-      var text = await res.text().catch(function () { return 'Нет деталей'; });
-      throw new Error('HTTP ' + res.status + ': ' + text);
-    }
-    return res.json();
+  function postJson(url, data) { return sendJson('POST', url, data); }
+  function putJson(url, data)  { return sendJson('PUT',  url, data); }
+
+  /** POST без тела (для эндпоинтов, читающих только path/query). */
+  async function postEmpty(url) {
+    var res = await fetch(API_BASE + url, { method: 'POST' });
+    return handle(res);
   }
 
   /** Отправляет GET-запрос и возвращает JSON. */
   async function get(url) {
     var res = await fetch(API_BASE + url);
-    if (!res.ok) {
-      var text = await res.text().catch(function () { return 'Нет деталей'; });
-      throw new Error('HTTP ' + res.status + ': ' + text);
-    }
-    return res.json();
+    return handle(res);
   }
 
   /**
@@ -297,13 +304,149 @@ var Api = (function () {
 
     /**
      * Обновить точку компании (статус и/или url).
-     * Эндпоинт без @RequestBody → отправляем form-encoded.
+     * PUT без @RequestBody → отправляем form-encoded.
      * @param {number|string} companyPointId
      * @param {object} payload - поля CompanyPointUpdateDto:
      *   newPointStatus (PointStatus), newCompanyPointUrl
      */
     updateCompanyPoint: function (companyPointId, payload) {
-      return postForm('/user-exchange-metrics/company-points/' + companyPointId, payload);
+      return putForm('/user-exchange-metrics/company-points/' + companyPointId, payload);
+    },
+
+    /* ========================================================
+       Компании (регистрация)
+       ======================================================== */
+
+    /**
+     * Создать компанию в системе.
+     * @param {object} payload - поля CreateCompanyDto: name, description,
+     *   suppUserProfileExchange, userProfileImportTopicName, triggerUrlForExportUserPortfolio
+     */
+    createCompany: function (payload) {
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/company/create', payload);
+    },
+
+    /* ========================================================
+       Альянсы
+       ======================================================== */
+
+    /**
+     * Создать альянс.
+     * @param {object} payload - поля CreateAllianceDto: name, description
+     */
+    createAlliance: function (payload) {
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/alliance/create', payload);
+    },
+
+    /**
+     * Получить список альянсов с пагинацией и фильтром.
+     * @param {object} opts
+     * @param {number}  opts.pageNumber
+     * @param {number}  opts.pageSize
+     * @param {string}  [opts.nameFilter] - подстрока названия (allianceNameSubstring)
+     * @param {number}  [opts.allianceId] - точный id альянса
+     */
+    getAlliances: function (opts) {
+      opts = opts || {};
+      var allianceFilter = {};
+      if (opts.nameFilter) allianceFilter.allianceNameSubstring = opts.nameFilter;
+      if (opts.allianceId !== undefined && opts.allianceId !== null && opts.allianceId !== '') {
+        allianceFilter.allianceId = opts.allianceId;
+      }
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/alliances', {
+        pageNumber:    opts.pageNumber !== undefined ? opts.pageNumber : 0,
+        pageSize:      opts.pageSize   !== undefined ? opts.pageSize   : 10,
+        allianceFilter: allianceFilter
+      });
+    },
+
+    /**
+     * Получить подробную информацию об альянсе (вместе с его точками).
+     * @param {number|string} allianceId
+     */
+    getAlliance: function (allianceId) {
+      return get('/user-exchange-metrics/alliance/' + allianceId);
+    },
+
+    /**
+     * Обновить название/описание альянса.
+     * Эндпоинт без @RequestBody → form-encoded.
+     * @param {number|string} allianceId
+     * @param {object} payload - поля UpdateAllianceDto: name, description
+     */
+    updateAlliance: function (allianceId, payload) {
+      return putForm('/user-exchange-metrics/alliance/' + allianceId, payload);
+    },
+
+    /**
+     * Удалить альянс.
+     * @param {number|string} allianceId
+     */
+    deleteAlliance: function (allianceId) {
+      return del('/user-exchange-metrics/alliance/' + allianceId);
+    },
+
+    /* ========================================================
+       Точки альянсов
+       ======================================================== */
+
+    /**
+     * Создать точку альянса.
+     * @param {object} payload - поля AlliancePointCreateDto: format, allianceId
+     */
+    createAlliancePoint: function (payload) {
+      // Эндпоинт принимает @RequestBody → отправляем JSON
+      return postJson('/user-exchange-metrics/alliance-point/create', payload);
+    },
+
+    /**
+     * Получить подробную информацию о точке альянса (вместе со связанными
+     * точками компаний).
+     * @param {number|string} alliancePointId
+     */
+    getAlliancePoint: function (alliancePointId) {
+      return get('/user-exchange-metrics/alliance-point/' + alliancePointId);
+    },
+
+    /**
+     * Обновить статус точки альянса.
+     * @param {number|string} alliancePointId
+     * @param {object} payload - поля AlliancePointUpdateDto: { newStatus: PointStatus }
+     */
+    updateAlliancePoint: function (alliancePointId, payload) {
+      // PUT с @RequestBody → отправляем JSON
+      return putJson('/user-exchange-metrics/alliance-point/' + alliancePointId, payload);
+    },
+
+    /**
+     * Удалить точку альянса.
+     * @param {number|string} alliancePointId
+     */
+    deleteAlliancePoint: function (alliancePointId) {
+      return del('/user-exchange-metrics/alliance-point/' + alliancePointId);
+    },
+
+    /**
+     * Добавить связь точки компании в точку альянса (companyPointId — query-параметр).
+     * @param {number|string} alliancePointId
+     * @param {number|string} companyPointId
+     */
+    addCompanyPointToAlliancePoint: function (alliancePointId, companyPointId) {
+      return postEmpty('/user-exchange-metrics/alliance-point/' + alliancePointId +
+        '/add-company-point?companyPointId=' + encodeURIComponent(companyPointId));
+    },
+
+    /**
+     * Удалить связь точки компании из точки альянса (companyPointId — query-параметр).
+     * @param {number|string} alliancePointId
+     * @param {number|string} companyPointId
+     */
+    deleteCompanyPointFromAlliancePoint: function (alliancePointId, companyPointId) {
+      return postEmpty('/user-exchange-metrics/alliance-point/' + alliancePointId +
+        '/delete-company-point?companyPointId=' + encodeURIComponent(companyPointId));
     }
   };
 })();

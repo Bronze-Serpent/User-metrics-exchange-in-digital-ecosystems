@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Точка альянса — Metrics Exchange</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     Header
+     ============================================================ -->
+<header class="page-header">
+  <div class="container">
+    <a href="app-admin.html" id="backLink" class="btn btn-ghost">← Назад</a>
+    <span class="page-title" id="pageTitle">🔗 Точка альянса</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     Main Content
+     ============================================================ -->
+<main class="container">
+
+  <!-- Alliance point detail -->
+  <div class="card">
+    <div class="toolbar" style="margin-bottom: 0;">
+      <h2 class="card-title" style="margin: 0;">Информация о точке альянса</h2>
+      <span class="toolbar-spacer"></span>
+      <button id="deleteApBtn" class="btn btn-danger btn-sm" style="display:none;">Удалить точку</button>
+    </div>
+    <div id="apDetail" style="margin-top: 16px;">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+
+  <!-- Linked company points -->
+  <div class="card">
+    <h2 class="card-title">Связанные точки компаний</h2>
+
+    <!-- Add company point -->
+    <form id="addCpForm" novalidate>
+      <div class="toolbar">
+        <input type="number" id="addCpId" class="form-control"
+               placeholder="ID точки компании" style="max-width: 220px;" />
+        <button type="submit" id="addCpBtn" class="btn btn-primary btn-sm">Добавить связь</button>
+        <span class="toolbar-spacer"></span>
+        <span id="cpAlert"></span>
+      </div>
+    </form>
+
+    <div id="cpContent">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     Modal: Delete confirmation
+     ============================================================ -->
+<div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Удаление точки альянса</h3>
+      <button class="modal-close" data-close="confirmModal" aria-label="Закрыть">×</button>
+    </div>
+    <div>
+      <div class="alert alert-warning" id="confirmText" style="margin-bottom: 16px;"></div>
+      <div id="confirmAlert"></div>
+      <div class="form-actions" style="justify-content: flex-end;">
+        <button class="btn btn-secondary" data-close="confirmModal">Отмена</button>
+        <button id="confirmOkBtn" class="btn btn-danger">Подтвердить удаление</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Scripts
+     ============================================================ -->
+<script src="../js/api.js"></script>
+<script>
+  /* id точки альянса из query-параметра ?id=... */
+  var alliancePointId = new URLSearchParams(location.search).get('id');
+  /* id альянса, к которому относится точка (известен после загрузки) */
+  var currentAllianceId = null;
+
+  var POINT_STATUSES = ['NEW', 'READY', 'IN_USE', 'IS_BEING_DECOMMISSIONED', 'DECOMMISSIONED'];
+  var POINT_STATUS_LABELS = {
+    NEW:                     ['badge-process', 'Новая'],
+    READY:                   ['badge-accept',  'Готова'],
+    IN_USE:                  ['badge-accept',  'Используется'],
+    IS_BEING_DECOMMISSIONED: ['badge-process', 'Выводится из эксплуатации'],
+    DECOMMISSIONED:          ['badge-default', 'Выведена из эксплуатации']
+  };
+  function pointStatusLabel(status) {
+    var pair = POINT_STATUS_LABELS[status];
+    return pair ? pair[1] : esc(status || '');
+  }
+
+  /* ============================================================
+     Helpers
+     ============================================================ */
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function pointStatusBadge(status) {
+    if (!status) return '<span class="badge badge-default">—</span>';
+    var pair = POINT_STATUS_LABELS[status] || ['badge-default', esc(status)];
+    return '<span class="badge ' + pair[0] + '">' + pair[1] + '</span>';
+  }
+  function showAlert(containerId, message, type) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (!message) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+  }
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  /* ============================================================
+     Загрузка и отрисовка точки альянса
+     ============================================================ */
+  function loadAlliancePoint() {
+    if (!alliancePointId) {
+      document.getElementById('apDetail').innerHTML =
+        '<div class="alert alert-error">Не указан id точки альянса.</div>';
+      document.getElementById('cpContent').innerHTML = '';
+      return;
+    }
+    Api.getAlliancePoint(alliancePointId).then(renderAp).catch(function (err) {
+      document.getElementById('apDetail').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки точки: ' + esc(err.message) + '</div>';
+      document.getElementById('cpContent').innerHTML = '';
+    });
+  }
+
+  /** Отрисовывает детали точки альянса и список связанных точек компаний. */
+  function renderAp(ap) {
+    document.getElementById('pageTitle').textContent = '🔗 Точка альянса #' + ap.id;
+    document.getElementById('deleteApBtn').style.display = '';
+
+    /* Ссылка "Назад" ведёт на страницу альянса */
+    currentAllianceId = ap.allianceId;
+    if (ap.allianceId !== undefined && ap.allianceId !== null) {
+      var back = document.getElementById('backLink');
+      back.href = 'alliance.html?id=' + encodeURIComponent(ap.allianceId);
+      back.textContent = '← К альянсу';
+    }
+
+    var statusOptions = POINT_STATUSES.map(function (s) {
+      var sel = (s === ap.status) ? ' selected' : '';
+      return '<option value="' + s + '"' + sel + '>' + pointStatusLabel(s) + '</option>';
+    }).join('');
+
+    document.getElementById('apDetail').innerHTML =
+      '<div class="detail-grid" style="margin-bottom: 16px;">' +
+        '<div class="detail-item"><div class="detail-label">ID</div>' +
+          '<div class="detail-value"><strong>#' + esc(ap.id) + '</strong></div></div>' +
+        '<div class="detail-item"><div class="detail-label">Формат</div>' +
+          '<div class="detail-value">' + esc(ap.format || '—') + '</div></div>' +
+        '<div class="detail-item"><div class="detail-label">Статус</div>' +
+          '<div class="detail-value" id="statusBadge">' + pointStatusBadge(ap.status) + '</div></div>' +
+      '</div>' +
+
+      '<form id="statusForm" novalidate>' +
+        '<div class="form-group" style="margin-bottom: 14px;">' +
+          '<label class="form-label" for="editApStatus">Изменить статус</label>' +
+          '<select id="editApStatus" class="form-control" style="max-width: 320px;">' + statusOptions + '</select>' +
+        '</div>' +
+        '<div id="statusAlert"></div>' +
+        '<div class="form-actions">' +
+          '<button type="submit" id="saveStatusBtn" class="btn btn-primary">Сохранить статус</button>' +
+        '</div>' +
+      '</form>';
+
+    document.getElementById('statusForm').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var saveBtn = document.getElementById('saveStatusBtn');
+      saveBtn.disabled = true; saveBtn.textContent = 'Сохранение...';
+      Api.updateAlliancePoint(ap.id, { newStatus: document.getElementById('editApStatus').value })
+        .then(function (updated) {
+          document.getElementById('statusBadge').innerHTML = pointStatusBadge(updated.status);
+          showAlert('statusAlert', '✓ Статус обновлён', 'success');
+        })
+        .catch(function (err) {
+          showAlert('statusAlert', 'Ошибка: ' + esc(err.message), 'error');
+        })
+        .finally(function () { saveBtn.disabled = false; saveBtn.textContent = 'Сохранить статус'; });
+    });
+
+    var companyPoints = ap.companyPoints || [];
+    if (!companyPoints.length) {
+      document.getElementById('cpContent').innerHTML =
+        '<div class="empty-state"><div class="empty-state-icon">🏢</div><p>Связанных точек компаний нет</p></div>';
+      return;
+    }
+    var rows = companyPoints.map(function (cp) {
+      return '<tr>' +
+        '<td style="width:70px;color:var(--text-muted)">#' + esc(cp.id) + '</td>' +
+        '<td>' + esc(cp.url || '—') + '</td>' +
+        '<td>' + (cp.companyId ? esc(cp.companyId) : '—') + '</td>' +
+        '<td>' + pointStatusBadge(cp.status) + '</td>' +
+        '<td style="width:50px;text-align:center;">' +
+          '<button class="btn-trash" title="Отвязать" onclick="removeCp(' + cp.id + ')">🗑</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+    document.getElementById('cpContent').innerHTML =
+      '<div class="table-wrapper"><table>' +
+        '<thead><tr><th>ID</th><th>URL</th><th>ID компании</th><th>Статус</th><th></th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table></div>';
+  }
+
+  /* ============================================================
+     Добавление / удаление связей с точками компаний
+     ============================================================ */
+  document.getElementById('addCpForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var cpId = document.getElementById('addCpId').value.trim();
+    showAlert('cpAlert', '', 'error');
+    if (!cpId) { showAlert('cpAlert', 'Укажите ID точки компании.', 'error'); return; }
+
+    var btn = document.getElementById('addCpBtn');
+    btn.disabled = true; btn.textContent = 'Добавление...';
+    Api.addCompanyPointToAlliancePoint(alliancePointId, cpId)
+      .then(function (updated) {
+        document.getElementById('addCpId').value = '';
+        renderAp(updated);
+      })
+      .catch(function (err) { showAlert('cpAlert', 'Ошибка: ' + esc(err.message), 'error'); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Добавить связь'; });
+  });
+
+  function removeCp(companyPointId) {
+    Api.deleteCompanyPointFromAlliancePoint(alliancePointId, companyPointId)
+      .then(function (updated) { renderAp(updated); })
+      .catch(function (err) { showAlert('cpAlert', 'Ошибка: ' + esc(err.message), 'error'); });
+  }
+
+  /* ============================================================
+     Удаление точки альянса
+     ============================================================ */
+  document.getElementById('deleteApBtn').addEventListener('click', function () {
+    document.getElementById('confirmText').innerHTML =
+      '<strong>Внимание!</strong> Удалить точку альянса <strong>#' + esc(alliancePointId) +
+      '</strong>? Действие необратимо.';
+    showAlert('confirmAlert', '', 'error');
+    openModal('confirmModal');
+  });
+
+  document.getElementById('confirmOkBtn').addEventListener('click', function () {
+    var btn = document.getElementById('confirmOkBtn');
+    btn.disabled = true; btn.textContent = 'Удаление...';
+    Api.deleteAlliancePoint(alliancePointId)
+      .then(function () {
+        closeModal('confirmModal');
+        var backHref = (currentAllianceId !== undefined && currentAllianceId !== null)
+          ? 'alliance.html?id=' + encodeURIComponent(currentAllianceId)
+          : 'app-admin.html';
+        document.getElementById('apDetail').innerHTML =
+          '<div class="alert alert-success">✓ Точка альянса удалена. ' +
+          '<a href="' + backHref + '">Вернуться к альянсу</a></div>';
+        document.getElementById('cpContent').innerHTML = '';
+        document.getElementById('deleteApBtn').style.display = 'none';
+        document.getElementById('addCpForm').style.display = 'none';
+      })
+      .catch(function (err) {
+        showAlert('confirmAlert', 'Ошибка: ' + esc(err.message), 'error');
+      })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Подтвердить удаление'; });
+  });
+
+  /* ============================================================
+     Modal close handlers
+     ============================================================ */
+  document.querySelectorAll('[data-close]').forEach(function (el) {
+    el.addEventListener('click', function () { closeModal(el.dataset.close); });
+  });
+  document.getElementById('confirmModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal('confirmModal');
+  });
+
+  /* ============================================================
+     Init
+     ============================================================ */
+  loadAlliancePoint();
+</script>
+
+</body>
+</html>

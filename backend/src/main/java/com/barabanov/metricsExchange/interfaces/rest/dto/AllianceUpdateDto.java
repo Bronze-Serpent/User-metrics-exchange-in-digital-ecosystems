@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class UpdateAllianceDto {
+public class AllianceUpdateDto {
 
     String name;
     String description;

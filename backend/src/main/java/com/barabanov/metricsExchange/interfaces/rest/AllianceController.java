@@ -19,7 +19,7 @@ public class AllianceController {
 
     // Рест на создание альянса
     @PostMapping("/alliance/create")
-    public AllianceDto createAlliance(CreateAllianceDto createAllianceDto) {
+    public AllianceDto createAlliance(@RequestBody CreateAllianceDto createAllianceDto) {
 
         log.info("Получен запрос на создание альянса");
         return allianceService.createAlliance(createAllianceDto);
@@ -47,16 +47,16 @@ public class AllianceController {
 
     // Рест на изменение названия / описания альянса
     @PutMapping("/alliance/{allianceId}")
-    public AllianceDto updateAlliance(@PathVariable Long allianceId, UpdateAllianceDto updateAllianceDto) {
+    public AllianceDto updateAlliance(@PathVariable Long allianceId, AllianceUpdateDto allianceUpdateDto) {
 
         log.info("Получен запрос на обновление альянса");
-        return allianceService.updateAlliance(allianceId, updateAllianceDto);
+        return allianceService.updateAlliance(allianceId, allianceUpdateDto);
     }
 
 
     // Рест на просмотр всех альянсов с пагинацией
     @PostMapping("/alliances")
-    public PageResponse<AllianceDto> getAlliances(AlliancePageRequest alliancePageRequest) {
+    public PageResponse<AllianceDto> getAlliances(@RequestBody AlliancePageRequest alliancePageRequest) {
 
         log.info("Получен запрос на получение набора альянсов");
         return allianceService.getAlliancePage(alliancePageRequest);

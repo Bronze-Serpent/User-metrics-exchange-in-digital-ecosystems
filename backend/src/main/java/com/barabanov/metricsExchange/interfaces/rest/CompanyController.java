@@ -63,4 +63,6 @@ public class CompanyController {
         return companyService.getIdNameSummary(companyIdNameSummaryRq);
     }
 
+    //TODO: нет обновлений у компаний?
+
 }

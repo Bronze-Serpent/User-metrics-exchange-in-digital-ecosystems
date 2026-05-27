@@ -1,5 +1,6 @@
 package com.barabanov.metricsExchange.interfaces.rest.dto;
 
+import com.barabanov.metricsExchange.entity.PointStatus;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -9,10 +10,7 @@ import lombok.experimental.FieldDefaults;
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class AlliancePageRequest {
+public class AlliancePointUpdateDto {
 
-    Integer pageNumber;
-    Integer pageSize;
-    AllianceFilter allianceFilter;
-    SortOrder sortOrder; //TODO: доделать или удалить сортировки
+    PointStatus newStatus;
 }

@@ -6,7 +6,6 @@ import com.querydsl.core.types.Predicate;
 import org.mapstruct.Mapper;
 
 import static com.barabanov.metricsExchange.entity.QAllianceEntity.allianceEntity;
-import static com.barabanov.metricsExchange.entity.QAlliancePointEntity.alliancePointEntity;
 import static com.barabanov.metricsExchange.entity.QCompanyEntity.companyEntity;
 import static com.barabanov.metricsExchange.entity.QCompanyPointEntity.companyPointEntity;
 import static com.barabanov.metricsExchange.entity.QTransferRequestEntity.transferRequestEntity;
@@ -77,17 +76,6 @@ public interface PredicateDataMapper {
                 .add(transferFilter.getDecisions(), transferRequestEntity.decision::in)
                 .add(transferFilter.getFromCompanyId(), transferRequestEntity.fromCompany.id::eq)
                 .add(transferFilter.getToCompanyId(), transferRequestEntity.toCompany.id::eq)
-                .build();
-    }
-
-    default Predicate mapAlliancePointFilterToPredicate(AlliancePointFilter alliancePointFilter) {
-        if (alliancePointFilter == null)
-            return QPredicates.builder().build();
-
-        return QPredicates.builder()
-                .add(alliancePointFilter.getId(), alliancePointEntity.id::eq)
-                .add(alliancePointFilter.getAllianceId(), alliancePointEntity.alliance.id::eq)
-                .add(alliancePointFilter.getStatuses(), alliancePointEntity.status::in)
                 .build();
     }
 }

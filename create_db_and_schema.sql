@@ -13,9 +13,10 @@ CREATE TABLE metrics_exchange.company
     supp_user_profile_exchange            BOOLEAN               NOT NULL,
     user_profile_import_topic_name        VARCHAR(250),
     trigger_url_for_export_user_portfolio VARCHAR(250),
-    is_deleted							  BOOLEAN               NOT NULL,
-    version                               INTEGER,
-    created_at                            TIMESTAMPTZ
+    is_deleted                            BOOLEAN,
+    version                               INTEGER               NOT NULL,
+    created_at                            TIMESTAMPTZ           NOT NULL,
+    updated_at                            TIMESTAMPTZ           NOT NULL
 );
 
 CREATE TABLE metrics_exchange.user
@@ -25,8 +26,9 @@ CREATE TABLE metrics_exchange.user
     email             VARCHAR(250),
     role              VARCHAR(250),
     linked_company_id BIGINT REFERENCES metrics_exchange.company (id),
-    version           INTEGER,
-    created_at        TIMESTAMPTZ
+    version           INTEGER               NOT NULL,
+    created_at        TIMESTAMPTZ           NOT NULL,
+    updated_at        TIMESTAMPTZ           NOT NULL
 );
 
 CREATE TABLE metrics_exchange.alliance
@@ -34,8 +36,9 @@ CREATE TABLE metrics_exchange.alliance
     id          BIGSERIAL PRIMARY KEY NOT NULL,
     name        VARCHAR(250),
     description VARCHAR(1000),
-    version     INTEGER,
-    created_at  TIMESTAMPTZ
+    version     INTEGER               NOT NULL,
+    created_at  TIMESTAMPTZ           NOT NULL,
+    updated_at  TIMESTAMPTZ           NOT NULL
 );
 
 CREATE TABLE metrics_exchange.alliance_point
@@ -44,8 +47,9 @@ CREATE TABLE metrics_exchange.alliance_point
     alliance_id BIGINT REFERENCES metrics_exchange.alliance (id) NOT NULL,
     format      TEXT,
     status      VARCHAR(250),
-    version     INTEGER,
-    created_at  TIMESTAMPTZ
+    version     INTEGER                                          NOT NULL,
+    created_at  TIMESTAMPTZ                                      NOT NULL,
+    updated_at  TIMESTAMPTZ                                      NOT NULL
 );
 
 CREATE TABLE metrics_exchange.company_point
@@ -56,8 +60,9 @@ CREATE TABLE metrics_exchange.company_point
     url               TEXT,
     status            VARCHAR(250),
     alliance_point_id BIGINT REFERENCES metrics_exchange.alliance_point (id),
-    version           INTEGER,
-    created_at        TIMESTAMPTZ
+    version           INTEGER               NOT NULL,
+    created_at        TIMESTAMPTZ           NOT NULL,
+    updated_at        TIMESTAMPTZ           NOT NULL
 );
 
 CREATE TABLE metrics_exchange.transfer_request
@@ -72,6 +77,7 @@ CREATE TABLE metrics_exchange.transfer_request
     status           VARCHAR(50),
     decision_comment VARCHAR(500),
     user_id          BIGINT REFERENCES metrics_exchange.user (id)    NOT NULL,
-    version          INTEGER,
-    created_at       TIMESTAMPTZ
+    version          INTEGER                                         NOT NULL,
+    created_at       TIMESTAMPTZ                                     NOT NULL,
+    updated_at       TIMESTAMPTZ                                     NOT NULL
 );

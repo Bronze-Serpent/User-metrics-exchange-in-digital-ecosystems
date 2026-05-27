@@ -30,6 +30,8 @@ public class AbstractEntity {
 
     private OffsetDateTime createdAt;
 
+    private OffsetDateTime updatedAt;
+
 
     /**
      * @CreatedDate не поддерживает OffsetDateTime. Local, Instant, Date, timestamp.
@@ -38,6 +40,13 @@ public class AbstractEntity {
      */
     @PrePersist
     public void fillFieldsPrePersist() {
-        createdAt = OffsetDateTime.now();
+        OffsetDateTime nowDateTime = OffsetDateTime.now();
+        createdAt = nowDateTime;
+        updatedAt = nowDateTime;
+    }
+
+    @PreUpdate
+    public void fillFieldsPreUpdate() {
+        updatedAt = OffsetDateTime.now();
     }
 }

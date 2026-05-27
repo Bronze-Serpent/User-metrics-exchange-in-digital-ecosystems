@@ -14,6 +14,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AlliancePointDto {
     Long id;
+    Long allianceId;
     String format;
     PointStatus status;
     List<CompanyPointDto> companyPoints;

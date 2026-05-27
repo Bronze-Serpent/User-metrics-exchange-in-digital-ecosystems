@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Альянс — Metrics Exchange</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     Header
+     ============================================================ -->
+<header class="page-header">
+  <div class="container">
+    <a href="app-admin.html" class="btn btn-ghost">← К администратору</a>
+    <span class="page-title" id="pageTitle">🤝 Альянс</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     Main Content
+     ============================================================ -->
+<main class="container">
+
+  <!-- Alliance detail / edit -->
+  <div class="card">
+    <h2 class="card-title">Информация об альянсе</h2>
+    <div id="allianceContent">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+
+  <!-- Alliance points -->
+  <div class="card">
+    <h2 class="card-title">Точки альянса</h2>
+
+    <!-- Create point (allianceId = текущий альянс, под капотом) -->
+    <form id="createPointForm" novalidate>
+      <div class="toolbar">
+        <input type="text" id="pointFormat" class="form-control"
+               placeholder="Формат (например: JSON)" style="max-width: 240px;" />
+        <button type="submit" id="createPointBtn" class="btn btn-primary btn-sm">Создать точку</button>
+        <span class="toolbar-spacer"></span>
+        <span id="createPointAlert"></span>
+      </div>
+    </form>
+
+    <div id="pointsContent">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     Modal: Delete confirmation
+     ============================================================ -->
+<div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Удаление альянса</h3>
+      <button class="modal-close" data-close="confirmModal" aria-label="Закрыть">×</button>
+    </div>
+    <div>
+      <div class="alert alert-warning" id="confirmText" style="margin-bottom: 16px;"></div>
+      <div id="confirmAlert"></div>
+      <div class="form-actions" style="justify-content: flex-end;">
+        <button class="btn btn-secondary" data-close="confirmModal">Отмена</button>
+        <button id="confirmOkBtn" class="btn btn-danger">Подтвердить удаление</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Scripts
+     ============================================================ -->
+<script src="../js/api.js"></script>
+<script>
+  /* id альянса из query-параметра ?id=... */
+  var allianceId = new URLSearchParams(location.search).get('id');
+
+  var POINT_STATUS_LABELS = {
+    NEW:                     ['badge-process', 'Новая'],
+    READY:                   ['badge-accept',  'Готова'],
+    IN_USE:                  ['badge-accept',  'Используется'],
+    IS_BEING_DECOMMISSIONED: ['badge-process', 'Выводится из эксплуатации'],
+    DECOMMISSIONED:          ['badge-default', 'Выведена из эксплуатации']
+  };
+
+  /* ============================================================
+     Helpers
+     ============================================================ */
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function pointStatusBadge(status) {
+    if (!status) return '<span class="badge badge-default">—</span>';
+    var pair = POINT_STATUS_LABELS[status] || ['badge-default', esc(status)];
+    return '<span class="badge ' + pair[0] + '">' + pair[1] + '</span>';
+  }
+  function showAlert(containerId, message, type) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (!message) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+  }
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  /* ============================================================
+     Загрузка и отрисовка альянса
+     ============================================================ */
+  function loadAlliance() {
+    if (!allianceId) {
+      document.getElementById('allianceContent').innerHTML =
+        '<div class="alert alert-error">Не указан id альянса.</div>';
+      document.getElementById('pointsContent').innerHTML = '';
+      return;
+    }
+
+    Api.getAlliance(allianceId)
+      .then(function (a) {
+        document.getElementById('pageTitle').textContent = '🤝 Альянс #' + a.id;
+
+        document.getElementById('allianceContent').innerHTML =
+          '<form id="editAllianceForm" novalidate>' +
+            '<div class="form-grid">' +
+              '<div class="form-group">' +
+                '<label class="form-label">ID</label>' +
+                '<input type="text" class="form-control" value="#' + esc(a.id) + '" disabled />' +
+              '</div>' +
+              '<div class="form-group">' +
+                '<label class="form-label" for="editAllianceName">Название</label>' +
+                '<input type="text" id="editAllianceName" class="form-control" value="' + esc(a.name || '') + '" />' +
+              '</div>' +
+              '<div class="form-group full-width">' +
+                '<label class="form-label" for="editAllianceDescription">Описание</label>' +
+                '<textarea id="editAllianceDescription" class="form-control" rows="3">' + esc(a.description || '') + '</textarea>' +
+              '</div>' +
+            '</div>' +
+            '<div id="editAllianceAlert"></div>' +
+            '<div class="form-actions" style="justify-content: space-between;">' +
+              '<button type="button" id="deleteAllianceBtn" class="btn btn-danger">Удалить альянс</button>' +
+              '<button type="submit" id="saveAllianceBtn" class="btn btn-primary">Сохранить</button>' +
+            '</div>' +
+          '</form>';
+
+        renderPoints(a.points || []);
+
+        document.getElementById('editAllianceForm').addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var saveBtn = document.getElementById('saveAllianceBtn');
+          saveBtn.disabled = true; saveBtn.textContent = 'Сохранение...';
+          Api.updateAlliance(a.id, {
+            name:        document.getElementById('editAllianceName').value.trim(),
+            description: document.getElementById('editAllianceDescription').value.trim()
+          })
+          .then(function () {
+            showAlert('editAllianceAlert', '✓ Изменения сохранены', 'success');
+          })
+          .catch(function (err) {
+            showAlert('editAllianceAlert', 'Ошибка: ' + esc(err.message), 'error');
+          })
+          .finally(function () { saveBtn.disabled = false; saveBtn.textContent = 'Сохранить'; });
+        });
+
+        document.getElementById('deleteAllianceBtn').addEventListener('click', function () {
+          document.getElementById('confirmText').innerHTML =
+            '<strong>Внимание!</strong> Удалить альянс <strong>#' + esc(a.id) + '</strong>? Действие необратимо.';
+          showAlert('confirmAlert', '', 'error');
+          openModal('confirmModal');
+        });
+      })
+      .catch(function (err) {
+        document.getElementById('allianceContent').innerHTML =
+          '<div class="alert alert-error">Ошибка загрузки альянса: ' + esc(err.message) + '</div>';
+        document.getElementById('pointsContent').innerHTML = '';
+      });
+  }
+
+  function renderPoints(points) {
+    if (!points.length) {
+      document.getElementById('pointsContent').innerHTML =
+        '<div class="empty-state"><div class="empty-state-icon">🔗</div><p>У альянса нет точек</p></div>';
+      return;
+    }
+    var rows = points.map(function (p) {
+      return '<tr class="clickable" onclick="openAlliancePointPage(' + p.id + ')">' +
+        '<td style="width:80px;color:var(--text-muted)">' + esc(p.id) + '</td>' +
+        '<td>' + esc(p.format || '—') + '</td>' +
+        '<td>' + pointStatusBadge(p.status) + '</td>' +
+      '</tr>';
+    }).join('');
+    document.getElementById('pointsContent').innerHTML =
+      '<div class="table-wrapper"><table>' +
+        '<thead><tr><th>ID</th><th>Формат</th><th>Статус</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table></div>';
+  }
+
+  /* Открывает отдельную страницу точки альянса в новой вкладке */
+  function openAlliancePointPage(id) {
+    window.open('alliance-point.html?id=' + encodeURIComponent(id), '_blank');
+  }
+
+  /* Перезагружает только список точек (без перестройки формы редактирования) */
+  function refreshPoints() {
+    Api.getAlliance(allianceId)
+      .then(function (a) { renderPoints(a.points || []); })
+      .catch(function (err) {
+        document.getElementById('pointsContent').innerHTML =
+          '<div class="alert alert-error">Ошибка загрузки точек: ' + esc(err.message) + '</div>';
+      });
+  }
+
+  /* ============================================================
+     Создание точки альянса (allianceId — текущий альянс)
+     ============================================================ */
+  document.getElementById('createPointForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!allianceId) { showAlert('createPointAlert', 'Не указан id альянса.', 'error'); return; }
+    var btn = document.getElementById('createPointBtn');
+    btn.disabled = true; btn.textContent = 'Создание...';
+    Api.createAlliancePoint({
+      format:     document.getElementById('pointFormat').value.trim(),
+      allianceId: Number(allianceId)
+    })
+    .then(function (ap) {
+      showAlert('createPointAlert', '✓ Точка #' + esc(ap.id) + ' создана', 'success');
+      document.getElementById('pointFormat').value = '';
+      refreshPoints();
+    })
+    .catch(function (err) {
+      showAlert('createPointAlert', 'Ошибка: ' + esc(err.message), 'error');
+    })
+    .finally(function () { btn.disabled = false; btn.textContent = 'Создать точку'; });
+  });
+
+  /* ============================================================
+     Удаление альянса
+     ============================================================ */
+  document.getElementById('confirmOkBtn').addEventListener('click', function () {
+    var btn = document.getElementById('confirmOkBtn');
+    btn.disabled = true; btn.textContent = 'Удаление...';
+    Api.deleteAlliance(allianceId)
+      .then(function () {
+        closeModal('confirmModal');
+        document.getElementById('allianceContent').innerHTML =
+          '<div class="alert alert-success">✓ Альянс удалён. ' +
+          '<a href="app-admin.html">Вернуться к списку</a></div>';
+        document.getElementById('pointsContent').innerHTML = '';
+      })
+      .catch(function (err) {
+        showAlert('confirmAlert', 'Ошибка: ' + esc(err.message), 'error');
+      })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Подтвердить удаление'; });
+  });
+
+  /* ============================================================
+     Modal close handlers
+     ============================================================ */
+  document.querySelectorAll('[data-close]').forEach(function (el) {
+    el.addEventListener('click', function () { closeModal(el.dataset.close); });
+  });
+  document.getElementById('confirmModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal('confirmModal');
+  });
+
+  /* ============================================================
+     Init
+     ============================================================ */
+  loadAlliance();
+</script>
+
+</body>
+</html>

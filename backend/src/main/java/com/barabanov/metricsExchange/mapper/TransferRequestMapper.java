@@ -18,5 +18,5 @@ public interface TransferRequestMapper {
     TransferRqDto mapToTransferRqDto(TransferRequestEntity source);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void mergeUpdateToTransferEntity(TransferDecisionDto source,@MappingTarget TransferRequestEntity target);
+    void mergeUpdateToTransferEntity(TransferDecisionDto source, @MappingTarget TransferRequestEntity target);
 }

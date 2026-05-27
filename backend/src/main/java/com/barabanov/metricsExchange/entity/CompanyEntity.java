@@ -30,8 +30,7 @@ public class CompanyEntity extends AbstractEntity {
 
     private String triggerUrlForExportUserPortfolio;
 
-    @Builder.Default
-    private Boolean isDeleted = false;
+    private Boolean isDeleted;
 
     @OneToMany(mappedBy = "linkedCompany")
     private List<UserEntity> companyUsers;
