@@ -2,10 +2,8 @@ package com.barabanov.metricsExchange.service;
 
 import com.barabanov.metricsExchange.entity.CompanyEntity;
 import com.barabanov.metricsExchange.entity.UserEntity;
-import com.barabanov.metricsExchange.interfaces.rest.dto.CreateUserDto;
-import com.barabanov.metricsExchange.interfaces.rest.dto.PageResponse;
-import com.barabanov.metricsExchange.interfaces.rest.dto.UserDto;
-import com.barabanov.metricsExchange.interfaces.rest.dto.UserPageRequest;
+import com.barabanov.metricsExchange.entity.UserRole;
+import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
 import com.barabanov.metricsExchange.mapper.SortDataMapper;
 import com.barabanov.metricsExchange.mapper.UserMapper;
@@ -27,6 +25,8 @@ import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 
+import static com.barabanov.metricsExchange.utils.DataExtractionUtils.getUserRole;
+
 
 @Slf4j
 @RequiredArgsConstructor
@@ -42,11 +42,36 @@ public class UserService implements UserDetailsService {
 
 
     @Transactional
-    public UserDto createUser(CreateUserDto createUserDto) {
+    public UserDto createClient(UserRegisterDto userRegisterDto) {
+        UserEntity creatingUser = userMapper.mapToEntity(userRegisterDto);
+        creatingUser.setRole(UserRole.CLIENT);
+        creatingUser.setPasswordHash(Optional.ofNullable(userRegisterDto.getPassword())
+                .filter(StringUtils::hasText)
+                .map(passwordEncoder::encode)
+                .orElseThrow(() -> new IllegalArgumentException("Пароль не может быть пустым при создании пользователя")));
+
+        return userMapper.toUserDto(userRepository.save(creatingUser));
+    }
+
+
+    @Transactional
+    public UserDto createUser(CreateUserDto createUserDto, UserDetails creatorUserDetails) {
+
+        CompanyEntity linkedCompanyEntity;
+        if (getUserRole(creatorUserDetails) == UserRole.COMPANY_AGENT) {
+            Optional<String> creatorEmailOptional = Optional.ofNullable(creatorUserDetails)
+                    .map(UserDetails::getUsername);
+
+            linkedCompanyEntity = creatorEmailOptional.flatMap(userRepository::findByEmail)
+                    .map(UserEntity::getLinkedCompany)
+                    .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию связанную с email: %s",
+                            creatorEmailOptional.orElse(null))));
+        } else
+            linkedCompanyEntity = Optional.ofNullable(createUserDto.getLinkedCompanyId())
+                    .flatMap(companyRepository::findById)
+                    .orElse(null);
+
         UserEntity creatingUser = userMapper.mapToEntity(createUserDto);
-        CompanyEntity linkedCompanyEntity = Optional.ofNullable(createUserDto.getLinkedCompanyId())
-                .flatMap(companyRepository::findById)
-                .orElse(null);
         creatingUser.setLinkedCompany(linkedCompanyEntity);
         creatingUser.setPasswordHash(Optional.ofNullable(createUserDto.getPassword())
                 .filter(StringUtils::hasText)
@@ -54,6 +79,13 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new IllegalArgumentException("Пароль не может быть пустым при создании пользователя"))); //TODO: сделать отдельный рест на изменение пароля у пользователя (админам приложения доступен + самим пользователям)
 
         return userMapper.toUserDto(userRepository.save(creatingUser));
+    }
+
+    @Transactional(readOnly = true)
+    public UserDto getUserInfoByEmail(String userEmail) {
+        return userRepository.findByEmail(userEmail)
+                .map(userMapper::toUserDto)
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти пользователя с email: %s", userEmail)));
     }
 
 

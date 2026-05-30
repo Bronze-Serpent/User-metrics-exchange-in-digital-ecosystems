@@ -3,6 +3,7 @@ package com.barabanov.metricsExchange.service;
 import com.barabanov.metricsExchange.entity.CompanyEntity;
 import com.barabanov.metricsExchange.entity.TransferRequestEntity;
 import com.barabanov.metricsExchange.entity.UserEntity;
+import com.barabanov.metricsExchange.entity.UserRole;
 import com.barabanov.metricsExchange.external.CompanyWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.kafka.KafkaSender;
@@ -13,24 +14,33 @@ import com.barabanov.metricsExchange.mapper.TransferRequestMapper;
 import com.barabanov.metricsExchange.repository.CompanyRepository;
 import com.barabanov.metricsExchange.repository.TransferRequestRepository;
 import com.barabanov.metricsExchange.repository.UserRepository;
-import com.querydsl.core.types.Predicate;
+import com.barabanov.metricsExchange.utils.QPredicates;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static com.barabanov.metricsExchange.entity.QTransferRequestEntity.transferRequestEntity;
 import static com.barabanov.metricsExchange.entity.TransferStatus.*;
+import static com.barabanov.metricsExchange.entity.UserRole.*;
+import static com.barabanov.metricsExchange.utils.DataExtractionUtils.getUserRole;
 
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class TransferRequestService {
+    private static final Set<UserRole> COMPANY_USERS_PLUS_SUPER_ROLES = Stream.of(COMPANY_ADMIN, COMPANY_AGENT, ADMIN, SUPER_USER)
+            .collect(Collectors.toSet());
 
     private final TransferRequestRepository transferRequestRepository;
     private final CompanyRepository companyRepository;
@@ -43,16 +53,16 @@ public class TransferRequestService {
 
 
     @Transactional
-    public TransferRqDto createTransferRq(CreateTransferRqDto createTransferRqDto) {
+    public TransferRqDto createTransferRq(CreateTransferRqDto createTransferRqDto, String clientEmail) {
         TransferRequestEntity creatingTransferRequest = transferRequestMapper.mapToEntity(createTransferRqDto);
         CompanyEntity fromCompanyEntity = companyRepository.findById(createTransferRqDto.getFromCompanyId())
                 .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию с id: %s", createTransferRqDto.getFromCompanyId())));
         CompanyEntity toCompanyEntity = companyRepository.findById(createTransferRqDto.getToCompanyId())
                 .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию с id: %s", createTransferRqDto.getToCompanyId())));
-        UserEntity requestCreatorEntity = userRepository.findById(1L)
-                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти пользователя с id: %s", 1)));
+        UserEntity requestCreatorEntity = userRepository.findByEmail(clientEmail)
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти пользователя с email: %s", clientEmail)));
 
-        creatingTransferRequest.setUser(requestCreatorEntity); // TODO: Доставать пользователя из контекста? + валидация что у него подходящая роль
+        creatingTransferRequest.setUser(requestCreatorEntity);
         creatingTransferRequest.setFromCompany(fromCompanyEntity);
         creatingTransferRequest.setToCompany(toCompanyEntity);
         creatingTransferRequest.setStatus(NEW);
@@ -90,15 +100,29 @@ public class TransferRequestService {
 
 
     @Transactional(readOnly = true)
-    public PageResponse<TransferRqDto> getTransferRqPage(TransferPageRequest transferPageRequest) {
-        Predicate predicate = predicateDataMapper.mapTransferFilterToPredicate(transferPageRequest.getTransferFilter());
+    public PageResponse<TransferRqDto> getTransferRqPage(TransferPageRequest transferPageRequest, UserDetails userDetails) {
+        QPredicates predicateBuilder = predicateDataMapper.mapTransferFilterToQPredicates(transferPageRequest.getTransferFilter());
+
+        //TODO: протестировать это обязательно (по моему нужны будут join в запросах, чтобы отрабатывали фильтры)
+        UserRole userRole = getUserRole(userDetails);
+        if (userRole == UserRole.CLIENT)
+            predicateBuilder.add(userDetails.getUsername(), transferRequestEntity.user.email::eq);
+        else if (COMPANY_USERS_PLUS_SUPER_ROLES.contains(userRole)) {
+            Optional<String> userEmailOptional = Optional.ofNullable(userDetails)
+                    .map(UserDetails::getUsername);
+            CompanyEntity linkedCompanyEntity = userEmailOptional.flatMap(userRepository::findByEmail)
+                    .map(UserEntity::getLinkedCompany)
+                    .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти связанную с email: %s",
+                            userEmailOptional.orElse(null))));
+            predicateBuilder.add(linkedCompanyEntity.getId(), transferRequestEntity.fromCompany.id::eq);
+        }
 
         Sort transferRqPageSort = sortDataMapper.mapTransferRqSortSpecifiersToSpringSort(transferPageRequest.getSortOrderSpecifiers());
         PageRequest pageRequest = PageRequest.of(
                 Optional.ofNullable(transferPageRequest.getPageNumber()).orElseThrow(),
                 Optional.ofNullable(transferPageRequest.getPageSize()).orElseThrow(),
                 transferRqPageSort);
-        Page<TransferRequestEntity> transfersPage = transferRequestRepository.findAll(predicate, pageRequest);
+        Page<TransferRequestEntity> transfersPage = transferRequestRepository.findAll(predicateBuilder.build(), pageRequest);
 
         return PageResponse.<TransferRqDto>builder()
                 .data(transfersPage.getContent().stream().map(transferRequestMapper::mapToTransferRqDto)

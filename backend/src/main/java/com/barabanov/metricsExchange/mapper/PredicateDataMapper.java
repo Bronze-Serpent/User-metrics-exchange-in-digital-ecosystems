@@ -64,9 +64,9 @@ public interface PredicateDataMapper {
     }
 
 
-    default Predicate mapTransferFilterToPredicate(TransferFilter transferFilter) {
+    default QPredicates mapTransferFilterToQPredicates(TransferFilter transferFilter) {
         if (transferFilter == null)
-            return QPredicates.builder().build();
+            return QPredicates.builder();
 
         return QPredicates.builder()
                 .add(transferFilter.getId(), transferRequestEntity.id::eq)
@@ -75,7 +75,6 @@ public interface PredicateDataMapper {
                 .add(transferFilter.getStatuses(), transferRequestEntity.status::in)
                 .add(transferFilter.getDecisions(), transferRequestEntity.decision::in)
                 .add(transferFilter.getFromCompanyId(), transferRequestEntity.fromCompany.id::eq)
-                .add(transferFilter.getToCompanyId(), transferRequestEntity.toCompany.id::eq)
-                .build();
+                .add(transferFilter.getToCompanyId(), transferRequestEntity.toCompany.id::eq);
     }
 }

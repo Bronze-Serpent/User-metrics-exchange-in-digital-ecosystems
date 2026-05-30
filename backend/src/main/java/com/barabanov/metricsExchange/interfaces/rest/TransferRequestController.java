@@ -4,6 +4,8 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.*;
 import com.barabanov.metricsExchange.service.TransferRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -18,10 +20,11 @@ public class TransferRequestController {
 
     // Рест для создания заявки на перенос рейтинга
     @PostMapping("/transfer-request/create")
-    public TransferRqDto createTransferRq(@RequestBody CreateTransferRqDto createTransferRqDto) {
+    public TransferRqDto createTransferRq(@RequestBody CreateTransferRqDto createTransferRqDto,
+                                          @AuthenticationPrincipal UserDetails clientDetails) {
 
-        log.info("Получен запрос на создание заявки");
-        return transferRequestService.createTransferRq(createTransferRqDto);
+        log.info("Получен запрос на создание заявки от пользователя с username: {}", clientDetails.getUsername());
+        return transferRequestService.createTransferRq(createTransferRqDto, clientDetails.getUsername());
     }
 
 
@@ -39,12 +42,14 @@ public class TransferRequestController {
     }
 
 
-    // Рест получения информации по заявкам пользователя с пагинацией (Рест на получения списка заявок для компании с пагинацией (тот же рест, но с другим фильтром)) + Он же рест на получение открытых заявок на компанию. Просто разные фильтры
+    // Рест получения информации по заявкам пользователя с пагинацией
+    // Рест на получения списка заявок для компании с пагинацией
     @PostMapping("/transfer-requests")
-    public PageResponse<TransferRqDto> getTransferRequestsPage(@RequestBody TransferPageRequest transferPageRequest) {
+    public PageResponse<TransferRqDto> getTransferRequestsPage(@RequestBody TransferPageRequest transferPageRequest,
+                                                               @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("Получен запрос на получение набора заявок на перенос");
-        return transferRequestService.getTransferRqPage(transferPageRequest);
+        return transferRequestService.getTransferRqPage(transferPageRequest, userDetails);
     }
 
 

@@ -1,131 +1,216 @@
 /* ============================================================
-   Metrics Exchange — клиентская часть HTTP Basic Authentication
+   Metrics Exchange — клиентская часть formLogin-аутентификации
    ============================================================
-   Браузер не показывает встроенный диалог Basic-auth в ответ на
-   fetch/XMLHttpRequest (это by-design в спецификации Fetch).
-   Поэтому показываем свою форму, кодируем (user:pass) в base64
-   и сами кладём в заголовок Authorization.
+   Сценарий:
+   - Сессия живёт на стороне backend через JSESSIONID-cookie.
+   - Все fetch-запросы используют credentials: 'include' (cookie).
+   - Профиль пользователя (из /me) хранится в sessionStorage
+     для отображения роли/email и контроля доступа на UI.
 
-   Использование на странице:
-     <script src="../js/auth.js"></script>   ← подключить ДО api.js
+   Поведение модуля:
+   - На каждой странице на DOMContentLoaded:
+     * Если страница публичная (index.html, login.html) — просто
+       рендерим UI (кнопка "Вход" или блок с пользователем).
+     * Если страница приватная и пользователя нет → редирект
+       на login.html?next=<текущий путь>.
+     * Если пользователь есть, но его роль не разрешена для
+       текущей страницы (вариант B) → редирект на роль-домашнюю.
+     * Иначе — рендерим UI.
+
+   Подключение на странице:
+     <script src="../js/auth.js"></script>   ← ДО api.js
      <script src="../js/api.js"></script>
-
-   После этого:
-   - При первом заходе (нет токена в sessionStorage) — показывается модалка.
-   - Все запросы из api.js автоматически получают заголовок Authorization.
-   - На 401 от backend токен сбрасывается и модалка показывается снова.
-   - В .top-nav автоматически добавляется кнопка "Выйти".
    ============================================================ */
+
+var API_BASE = 'http://localhost:8080';   // используется и из api.js
 
 var Auth = (function () {
   'use strict';
 
-  var STORAGE_KEY = 'me_basic_auth';
+  var USER_KEY = 'me_user_info';
 
-  function getToken()       { return sessionStorage.getItem(STORAGE_KEY); }
-  function setToken(token)  { sessionStorage.setItem(STORAGE_KEY, token); }
-  function clearToken()     { sessionStorage.removeItem(STORAGE_KEY); }
+  /* ---- Профиль ---- */
+  function getUser() {
+    var s = sessionStorage.getItem(USER_KEY);
+    if (!s) return null;
+    try { return JSON.parse(s); } catch (e) { return null; }
+  }
+  function setUser(user)  { sessionStorage.setItem(USER_KEY, JSON.stringify(user)); }
+  function clearUser()    { sessionStorage.removeItem(USER_KEY); }
 
-  /** base64(user:pass) с поддержкой не-ASCII в логине/пароле */
-  function makeToken(user, pass) {
-    return 'Basic ' + btoa(unescape(encodeURIComponent(user + ':' + pass)));
+  /* ---- Карты ролей и страниц ---- */
+  var ROLE_HOMES = {
+    CLIENT:        'user.html',
+    COMPANY_AGENT: 'company-owner.html',
+    COMPANY_ADMIN: 'company-admin.html',
+    ADMIN:         'app-admin.html',
+    SUPER_USER:    'superuser.html'
+  };
+
+  /* Какие роли допущены на каждую приватную страницу.
+     null/отсутствие в карте = публичная страница. */
+  var PAGE_ROLES = {
+    'user.html':           ['CLIENT'],
+    'company-owner.html':  ['COMPANY_AGENT'],
+    'company-admin.html':  ['COMPANY_ADMIN'],
+    'app-admin.html':      ['ADMIN'],
+    'superuser.html':      ['SUPER_USER'],
+    'alliance.html':       ['ADMIN', 'SUPER_USER'],
+    'alliance-point.html': ['ADMIN', 'SUPER_USER']
+  };
+
+  var ROLE_LABELS = {
+    CLIENT:        'Клиент',
+    COMPANY_AGENT: 'Представитель компании',
+    COMPANY_ADMIN: 'Администратор компании',
+    ADMIN:         'Администратор приложения',
+    SUPER_USER:    'Суперпользователь'
+  };
+
+  /* ---- Утилиты путей ---- */
+  function currentPageName() {
+    var path = window.location.pathname;
+    var idx = path.lastIndexOf('/');
+    var name = (idx >= 0) ? path.substring(idx + 1) : path;
+    if (!name) name = 'index.html';
+    return name;
+  }
+  function isPagesContext() {
+    return window.location.pathname.indexOf('/pages/') !== -1;
+  }
+  function urlForPagesFile(file) {
+    return isPagesContext() ? file : ('pages/' + file);
+  }
+  function urlForRootFile(file) {
+    return isPagesContext() ? ('../' + file) : file;
   }
 
-  /** Создаёт модалку и кнопку "Выйти" в top-nav (если есть). Идемпотентно. */
-  function ensureUI() {
-    if (document.getElementById('authLoginModal')) return;
+  function loginUrl()  { return urlForRootFile('login.html'); }
+  function indexUrl()  { return urlForRootFile('index.html'); }
 
-    var modalHtml =
-      '<div class="modal-overlay" id="authLoginModal" role="dialog" aria-modal="true">' +
-        '<div class="modal" style="max-width: 380px;">' +
-          '<div class="modal-header">' +
-            '<h3 class="modal-title">Вход в Metrics Exchange</h3>' +
-          '</div>' +
-          '<form id="authLoginForm" novalidate>' +
-            '<div class="form-group" style="margin-bottom: 12px;">' +
-              '<label class="form-label" for="authUser">Логин</label>' +
-              '<input type="text" id="authUser" class="form-control" required autocomplete="username" />' +
-            '</div>' +
-            '<div class="form-group" style="margin-bottom: 14px;">' +
-              '<label class="form-label" for="authPass">Пароль</label>' +
-              '<input type="password" id="authPass" class="form-control" required autocomplete="current-password" />' +
-            '</div>' +
-            '<div id="authAlert"></div>' +
-            '<div class="form-actions" style="justify-content: flex-end;">' +
-              '<button type="submit" class="btn btn-primary">Войти</button>' +
-            '</div>' +
-          '</form>' +
-        '</div>' +
-      '</div>';
-
-    var holder = document.createElement('div');
-    holder.innerHTML = modalHtml;
-    document.body.appendChild(holder.firstChild);
-
-    document.getElementById('authLoginForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var user = document.getElementById('authUser').value;
-      var pass = document.getElementById('authPass').value;
-      if (!user || !pass) return;
-      setToken(makeToken(user, pass));
-      hideLogin();
-      /* Перезагружаем страницу — самый простой способ перезапустить все
-         init-запросы (loadCompanies, loadUsers, ...) с новой авторизацией */
-      window.location.reload();
-    });
-
-    /* Добавляем кнопку "Выйти" в правую часть верхней панели, если она есть */
-    var topNav = document.querySelector('.top-nav');
-    if (topNav) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'top-nav-home';
-      btn.style.cssText = 'background:none;border:none;cursor:pointer;font:inherit;';
-      btn.textContent = 'Выйти';
-      btn.addEventListener('click', function () { logout(); });
-      topNav.appendChild(btn);
-    }
+  function homeForUser(user) {
+    var role = user && user.role;
+    var page = ROLE_HOMES[role];
+    return page ? urlForPagesFile(page) : indexUrl();
   }
 
-  function showLogin() {
-    ensureUI();
-    var el = document.getElementById('authLoginModal');
-    el.classList.add('open');
-    /* фокус на поле логина */
-    setTimeout(function () {
-      var u = document.getElementById('authUser');
-      if (u) u.focus();
-    }, 0);
+  /* Публичные страницы (доступны всем без ограничений). */
+  function isPublicPage(page) {
+    return page === 'index.html' || page === 'login.html';
   }
 
-  function hideLogin() {
-    var m = document.getElementById('authLoginModal');
-    if (m) m.classList.remove('open');
+  /* Разрешена ли страница для роли пользователя. */
+  function isAllowed(page, user) {
+    var allowed = PAGE_ROLES[page];
+    if (!allowed) return true;                 // нет ограничений
+    return !!(user && allowed.indexOf(user.role) !== -1);
   }
 
-  /** Отметить, что предыдущая попытка не прошла (показать в alert модалки). */
-  function showAuthError(message) {
-    ensureUI();
-    var el = document.getElementById('authAlert');
-    if (el) el.innerHTML = '<div class="alert alert-error">' + message + '</div>';
+  /* ---- Редиректы ---- */
+  function redirectToLogin() {
+    /* Сохраняем pathname + search, чтобы вернуться на конкретный URL (например, alliance.html?id=5) */
+    var next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = loginUrl() + '?next=' + next;
   }
 
   function logout() {
-    clearToken();
-    window.location.reload();
+    fetch(API_BASE + '/user-exchange-metrics/logout', {
+      method: 'POST',
+      credentials: 'include'
+    }).finally(function () {
+      clearUser();
+      window.location.href = indexUrl();
+    });
   }
 
-  /* При загрузке DOM: создать модалку, и если токена нет — показать её */
+  /* ---- Утилиты HTML ---- */
+  function escHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ---- Инжект блока пользователя/входа в top-nav ---- */
+  function injectTopNavUI() {
+    var topNav = document.querySelector('.top-nav');
+    if (!topNav) return;
+
+    /* Удалим прежний инжект, если был — для идемпотентности */
+    var prev = topNav.querySelectorAll('[data-auth-injected]');
+    prev.forEach(function (el) { el.remove(); });
+
+    var user = getUser();
+    if (!user) {
+      /* Кнопка "Войти" */
+      var loginLink = document.createElement('a');
+      loginLink.href = loginUrl();
+      loginLink.className = 'top-nav-home';
+      loginLink.textContent = 'Войти';
+      loginLink.setAttribute('data-auth-injected', '');
+      topNav.appendChild(loginLink);
+      return;
+    }
+
+    /* Email + роль */
+    var info = document.createElement('span');
+    info.className = 'top-nav-home';
+    info.style.cssText = 'color:var(--text);font-size:0.8rem;padding:4px 8px;cursor:default;';
+    info.setAttribute('data-auth-injected', '');
+    var roleLabel = ROLE_LABELS[user.role] || user.role;
+    info.innerHTML = '<strong>' + escHtml(user.email) + '</strong> ' +
+      '<span style="color:var(--text-muted)">(' + escHtml(roleLabel) + ')</span>';
+    topNav.appendChild(info);
+
+    /* Кнопка "Выйти" */
+    var logoutBtn = document.createElement('button');
+    logoutBtn.type = 'button';
+    logoutBtn.className = 'top-nav-home';
+    logoutBtn.style.cssText = 'background:none;border:none;cursor:pointer;font:inherit;';
+    logoutBtn.textContent = 'Выйти';
+    logoutBtn.setAttribute('data-auth-injected', '');
+    logoutBtn.addEventListener('click', logout);
+    topNav.appendChild(logoutBtn);
+  }
+
+  /* ---- Основная логика на DOMContentLoaded ---- */
   document.addEventListener('DOMContentLoaded', function () {
-    ensureUI();
-    if (!getToken()) showLogin();
+    var page = currentPageName();
+    var user = getUser();
+
+    if (isPublicPage(page)) {
+      /* На login.html отдельный UI у формы — top-nav не дополняем */
+      if (page !== 'login.html') injectTopNavUI();
+      return;
+    }
+
+    if (!user) {
+      redirectToLogin();
+      return;
+    }
+
+    /* Вариант B: редирект только если текущая страница недоступна */
+    if (!isAllowed(page, user)) {
+      window.location.href = homeForUser(user);
+      return;
+    }
+
+    injectTopNavUI();
   });
 
   return {
-    getToken:        getToken,
-    isAuthenticated: function () { return !!getToken(); },
-    showLogin:       showLogin,
-    showAuthError:   showAuthError,
-    logout:          logout
+    getUser:         getUser,
+    setUser:         setUser,
+    clearUser:       clearUser,
+    isAuthenticated: function () { return !!getUser(); },
+    loginUrl:        loginUrl,
+    indexUrl:        indexUrl,
+    homeForUser:     homeForUser,
+    isAllowed:       isAllowed,
+    redirectToLogin: redirectToLogin,
+    logout:          logout,
+    ROLE_HOMES:      ROLE_HOMES,
+    ROLE_LABELS:     ROLE_LABELS,
+    PAGE_ROLES:      PAGE_ROLES
   };
 })();

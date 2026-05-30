@@ -8,60 +8,43 @@
 </head>
 <body>
 
-  <header class="page-header">
-    <div class="container">
-      <span class="page-title">Metrics Exchange</span>
+<nav class="top-nav">
+  <button class="top-nav-btn active" data-tab="about">О нас</button>
+  <!-- "Войти" или email + "Выйти" будут добавлены автоматически в auth.js -->
+</nav>
+
+<main class="container">
+  <div class="tab-panel active" id="tab-about">
+    <div class="card about-page">
+      <h2>О Metrics Exchange</h2>
+      <p>Добро пожаловать в Metrics Exchange — место, где компании дружат рейтингами, как будто это коллекция марок.</p>
+
+      <h3>Зачем это всё?</h3>
+      <p>Чтобы пользователь мог переносить заработанную репутацию из одной компании в другую, не начиная каждый раз с нуля как новорождённый.</p>
+
+      <h3>Что позволяет делать</h3>
+      <ul>
+        <li>Регистрировать компании и собирать их в альянсы.</li>
+        <li>Создавать точки обмена метриками и связывать их в альянсах.</li>
+        <li>Подавать заявки на перенос профиля и выносить по ним решения.</li>
+        <li>Управлять администраторами компании.</li>
+      </ul>
+
+      <h3>Сколько нам лет?</h3>
+      <p>Целых 0 лет — гордый возраст бета-версии. Когда-нибудь нам стукнет один, обещаем устроить праздник.</p>
+
+      <h3>Планы на будущее</h3>
+      <ul>
+        <li>Авторизация — чтобы перестать наконец прописывать <code>companyId = 1</code>.</li>
+        <li>Реальная многопользовательская работа.</li>
+        <li>Скромный, но уверенный захват рынка пользовательских метрик.</li>
+      </ul>
     </div>
-  </header>
+  </div>
+</main>
 
-  <main class="home-page">
-    <h1 class="home-title">Система обмена метриками</h1>
-    <p class="home-subtitle">Выберите раздел для работы</p>
-
-    <nav class="nav-buttons">
-
-      <a href="pages/user.html" class="nav-btn">
-        <span class="nav-btn-icon">👤</span>
-        <span>
-          Страница пользователя
-          <div class="nav-btn-desc">Заявки на перенос рейтинга, список компаний</div>
-        </span>
-      </a>
-
-      <a href="pages/company-admin.html" class="nav-btn">
-        <span class="nav-btn-icon">🏢</span>
-        <span>
-          Страница администратора компании
-          <div class="nav-btn-desc">Заявки на перенос, выставленные на компанию, и решения по ним</div>
-        </span>
-      </a>
-
-      <a href="pages/company-owner.html" class="nav-btn">
-        <span class="nav-btn-icon">👔</span>
-        <span>
-          Страница представителя компании
-          <div class="nav-btn-desc">Удаление компании, точки метрик, администраторы компании</div>
-        </span>
-      </a>
-
-      <a href="pages/app-admin.html" class="nav-btn">
-        <span class="nav-btn-icon">⚙️</span>
-        <span>
-          Страница администратора приложения
-          <div class="nav-btn-desc">Регистрация компаний, управление альянсами и точками альянсов</div>
-        </span>
-      </a>
-
-      <a href="pages/superuser.html" class="nav-btn">
-        <span class="nav-btn-icon">🛡️</span>
-        <span>
-          Страница суперпользователя
-          <div class="nav-btn-desc">Полный доступ ко всем ресурсам системы</div>
-        </span>
-      </a>
-
-    </nav>
-  </main>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
 
 </body>
 </html>
