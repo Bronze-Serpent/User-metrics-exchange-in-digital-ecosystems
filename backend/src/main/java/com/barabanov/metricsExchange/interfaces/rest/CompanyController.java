@@ -63,6 +63,6 @@ public class CompanyController {
         return companyService.getIdNameSummary(companyIdNameSummaryRq);
     }
 
-    //TODO: нет обновлений у компаний?
+    //TODO: нет обновлений у компаний? - добавить. По крайней мере чтобы можно было менять описание + Суперпользователь не может удалять пользователей системы (это может и нормально)?
 
 }

@@ -9,25 +9,44 @@
 <body>
 
 <!-- ============================================================
-     Header
+     Top navigation
      ============================================================ -->
-<header class="page-header">
-  <div class="container">
-    <a href="../index.html" class="btn btn-ghost">← Назад</a>
-    <span class="page-title">👤 Страница пользователя</span>
-  </div>
-</header>
+<nav class="top-nav">
+  <button class="top-nav-btn" data-tab="about">О нас</button>
+  <button class="top-nav-btn" data-tab="companies">Компании</button>
+  <button class="top-nav-btn active" data-tab="create-request">Создание заявки</button>
+  <button class="top-nav-btn" data-tab="transfers">Мои заявки</button>
+  <a href="../index.html" class="top-nav-home">На главную</a>
+</nav>
 
 <!-- ============================================================
      Main Content
      ============================================================ -->
 <main class="container">
 
-  <!-- Tabs Navigation -->
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="create-request">📝 Создать заявку</button>
-    <button class="tab-btn"        data-tab="companies">🏢 Компании</button>
-    <button class="tab-btn"        data-tab="transfers">📋 Мои заявки</button>
+  <!-- О нас -->
+  <div class="tab-panel" id="tab-about">
+    <div class="card about-page">
+      <h2>О Metrics Exchange</h2>
+      <p>Добро пожаловать в Metrics Exchange — место, где компании дружат рейтингами, как будто это коллекция марок.</p>
+      <h3>Зачем это всё?</h3>
+      <p>Чтобы пользователь мог переносить заработанную репутацию из одной компании в другую, не начиная каждый раз с нуля как новорождённый.</p>
+      <h3>Что позволяет делать</h3>
+      <ul>
+        <li>Регистрировать компании и собирать их в альянсы.</li>
+        <li>Создавать точки обмена метриками и связывать их в альянсах.</li>
+        <li>Подавать заявки на перенос профиля и выносить по ним решения.</li>
+        <li>Управлять администраторами компании.</li>
+      </ul>
+      <h3>Сколько нам лет?</h3>
+      <p>Целых 0 лет — гордый возраст бета-версии. Когда-нибудь нам стукнет один, обещаем устроить праздник.</p>
+      <h3>Планы на будущее</h3>
+      <ul>
+        <li>Авторизация — чтобы перестать наконец прописывать <code>companyId = 1</code>.</li>
+        <li>Реальная многопользовательская работа.</li>
+        <li>Скромный, но уверенный захват рынка пользовательских метрик.</li>
+      </ul>
+    </div>
   </div>
 
   <!-- ========================
@@ -753,24 +772,16 @@
   });
 
   /* ============================================================
-     Tab switching
+     Tab switching (top-nav)
      ============================================================ */
-  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+  document.querySelectorAll('.top-nav-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      /* Update tab buttons */
-      document.querySelectorAll('.tab-btn').forEach(function (b) {
-        b.classList.remove('active');
-      });
+      document.querySelectorAll('.top-nav-btn').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
-
-      /* Update panels */
-      document.querySelectorAll('.tab-panel').forEach(function (p) {
-        p.classList.remove('active');
-      });
+      document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
       var panel = document.getElementById('tab-' + btn.dataset.tab);
       if (panel) panel.classList.add('active');
 
-      /* Load data for the newly activated tab */
       if (btn.dataset.tab === 'companies') loadCompanies(0);
       if (btn.dataset.tab === 'transfers') loadTransfers(0);
     });

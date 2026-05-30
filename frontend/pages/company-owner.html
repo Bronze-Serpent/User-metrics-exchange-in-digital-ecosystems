@@ -8,67 +8,88 @@
 </head>
 <body>
 
-<!-- ============================================================
-     Header
-     ============================================================ -->
-<header class="page-header">
-  <div class="container">
-    <a href="../index.html" class="btn btn-ghost">← Назад</a>
-    <span class="page-title">👔 Страница представителя компании</span>
-  </div>
-</header>
+<nav class="top-nav">
+  <button class="top-nav-btn" data-tab="about">О нас</button>
+  <button class="top-nav-btn" data-tab="companies">Компании</button>
+  <button class="top-nav-btn active" data-tab="management">Управление компанией</button>
+  <button class="top-nav-btn" data-tab="admins">Администраторы компании</button>
+  <a href="../index.html" class="top-nav-home">На главную</a>
+</nav>
 
-<!-- ============================================================
-     Main Content
-     ============================================================ -->
 <main class="container">
 
-  <!-- Tabs Navigation -->
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="company">🏢 Компания</button>
-    <button class="tab-btn"        data-tab="points">📍 Точки компании</button>
-    <button class="tab-btn"        data-tab="admins">👥 Администраторы компании</button>
+  <!-- О нас -->
+  <div class="tab-panel" id="tab-about">
+    <div class="card about-page">
+      <h2>О Metrics Exchange</h2>
+      <p>Добро пожаловать в Metrics Exchange — место, где компании дружат рейтингами, как будто это коллекция марок.</p>
+      <h3>Зачем это всё?</h3>
+      <p>Чтобы пользователь мог переносить заработанную репутацию из одной компании в другую, не начиная каждый раз с нуля как новорождённый.</p>
+      <h3>Что позволяет делать</h3>
+      <ul>
+        <li>Регистрировать компании и собирать их в альянсы.</li>
+        <li>Создавать точки обмена метриками и связывать их в альянсах.</li>
+        <li>Подавать заявки на перенос профиля и выносить по ним решения.</li>
+        <li>Управлять администраторами компании.</li>
+      </ul>
+      <h3>Сколько нам лет?</h3>
+      <p>Целых 0 лет — гордый возраст бета-версии. Когда-нибудь нам стукнет один, обещаем устроить праздник.</p>
+      <h3>Планы на будущее</h3>
+      <ul>
+        <li>Авторизация — чтобы перестать наконец прописывать <code>companyId = 1</code>.</li>
+        <li>Реальная многопользовательская работа.</li>
+        <li>Скромный, но уверенный захват рынка пользовательских метрик.</li>
+      </ul>
+    </div>
   </div>
 
-  <!-- ========================
-       Tab 1: Company management
-       ======================== -->
-  <div class="tab-panel active" id="tab-company">
+  <!-- Компании -->
+  <div class="tab-panel" id="tab-companies">
     <div class="card">
-      <h2 class="card-title">Управление компанией</h2>
+      <h2 class="card-title">Компании</h2>
+      <div class="toolbar">
+        <input type="text" id="companyNameFilter" class="form-control" placeholder="Поиск по названию..." style="max-width: 240px;" />
+        <input type="number" id="companyIdFilter" class="form-control" placeholder="ID компании" style="max-width: 140px;" />
+        <button id="companiesSearchBtn" class="btn btn-primary btn-sm">Найти</button>
+        <button id="companiesResetBtn" class="btn btn-secondary btn-sm">Сбросить</button>
+        <span class="toolbar-spacer"></span>
+        <span id="companiesCountInfo" class="page-info"></span>
+      </div>
+      <div id="companiesContent"><div class="loading">Загрузка...</div></div>
+      <div class="pagination" id="companiesPagination"></div>
+    </div>
+  </div>
+
+  <!-- Управление компанией: удаление компании + точки компании -->
+  <div class="tab-panel active" id="tab-management">
+
+    <!-- Удаление компании -->
+    <div class="card">
+      <h2 class="card-title">Удаление компании из системы</h2>
       <p class="hint" style="margin-bottom: 16px;">
         Удаление компании из системы обмена пользовательскими метриками —
         необратимое действие.
       </p>
       <button id="deleteCompanyBtn" class="btn btn-danger">🗑 Удалить компанию из системы</button>
     </div>
-  </div>
 
-  <!-- ========================
-       Tab 2: Company points
-       ======================== -->
-  <div class="tab-panel" id="tab-points">
-
-    <!-- Create point -->
+    <!-- Создание точки -->
     <div class="card">
       <div class="toolbar" style="margin-bottom: 0;">
         <h2 class="card-title" style="margin: 0;">Точки предоставления метрик</h2>
         <span class="toolbar-spacer"></span>
         <button id="togglePointFormBtn" class="btn btn-primary btn-sm">➕ Создать точку</button>
       </div>
-
       <form id="createPointForm" class="hidden" novalidate style="margin-top: 18px;">
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label" for="pointUrl">URL точки *</label>
-            <input type="text" id="pointUrl" class="form-control"
-                   placeholder="https://api.company.com/metrics" required />
+            <input type="text" id="pointUrl" class="form-control" placeholder="https://api.company.com/metrics" required />
             <span class="hint">Адрес, по которому система обращается за метриками</span>
           </div>
           <div class="form-group">
             <label class="form-label" for="pointFormat">Формат</label>
-            <input type="text" id="pointFormat" class="form-control"
-                   placeholder="Например: JSON" />
+            <input type="text" id="pointFormat" class="form-control" placeholder="Например: JSON" />
             <span class="hint">Формат предоставляемых данных</span>
           </div>
         </div>
@@ -79,41 +100,32 @@
       </form>
     </div>
 
-    <!-- Points list -->
+    <!-- Список точек -->
     <div class="card">
       <div class="toolbar">
         <h3 class="card-title" style="margin: 0;">Список точек</h3>
         <span class="toolbar-spacer"></span>
         <span id="pointsCountInfo" class="page-info"></span>
       </div>
-
-      <div id="pointsContent">
-        <div class="loading">Загрузка точек...</div>
-      </div>
+      <div id="pointsContent"><div class="loading">Загрузка точек...</div></div>
       <div class="pagination" id="pointsPagination"></div>
     </div>
   </div>
 
-  <!-- ========================
-       Tab 3: Company admins
-       ======================== -->
+  <!-- Администраторы компании -->
   <div class="tab-panel" id="tab-admins">
 
-    <!-- Create admin -->
     <div class="card">
       <h2 class="card-title">Создание администратора компании</h2>
-
       <form id="createAdminForm" novalidate style="margin-top: 18px;">
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label" for="adminEmail">Email *</label>
-            <input type="email" id="adminEmail" class="form-control"
-                   placeholder="admin@company.com" required />
+            <input type="email" id="adminEmail" class="form-control" placeholder="admin@company.com" required />
           </div>
           <div class="form-group">
             <label class="form-label" for="adminPassword">Пароль *</label>
-            <input type="password" id="adminPassword" class="form-control"
-                   placeholder="Пароль администратора" required />
+            <input type="password" id="adminPassword" class="form-control" placeholder="Пароль администратора" required />
             <span class="hint">Будет использован backend позже</span>
           </div>
         </div>
@@ -124,31 +136,23 @@
       </form>
     </div>
 
-    <!-- Admins list -->
     <div class="card">
       <div class="toolbar">
-        <input type="number" id="adminIdFilter" class="form-control"
-               placeholder="Фильтр по ID" style="max-width: 140px;" />
-        <input type="text" id="adminEmailFilter" class="form-control"
-               placeholder="Фильтр по email..." style="max-width: 220px;" />
+        <input type="number" id="adminIdFilter" class="form-control" placeholder="Фильтр по ID" style="max-width: 140px;" />
+        <input type="text" id="adminEmailFilter" class="form-control" placeholder="Фильтр по email..." style="max-width: 220px;" />
         <button id="adminsSearchBtn" class="btn btn-primary btn-sm">Найти</button>
         <button id="adminsResetBtn"  class="btn btn-secondary btn-sm">Сбросить</button>
         <span class="toolbar-spacer"></span>
         <span id="adminsCountInfo" class="page-info"></span>
       </div>
-
-      <div id="adminsContent">
-        <div class="loading">Загрузка администраторов...</div>
-      </div>
+      <div id="adminsContent"><div class="loading">Загрузка администраторов...</div></div>
       <div class="pagination" id="adminsPagination"></div>
     </div>
   </div>
 
 </main>
 
-<!-- ============================================================
-     Modal: Delete company confirmation
-     ============================================================ -->
+<!-- Modals -->
 <div class="modal-overlay" id="deleteCompanyModal" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="modal-header">
@@ -157,8 +161,7 @@
     </div>
     <div>
       <div class="alert alert-warning" style="margin-bottom: 16px;">
-        <strong>Внимание!</strong> Вы действительно хотите удалить компанию из системы
-        обмена метриками?
+        <strong>Внимание!</strong> Вы действительно хотите удалить компанию из системы обмена метриками?
         <ul style="margin: 10px 0 0 18px;">
           <li>Будут удалены все администраторы компании;</li>
           <li>Будет удалён ваш собственный аккаунт;</li>
@@ -174,9 +177,6 @@
   </div>
 </div>
 
-<!-- ============================================================
-     Modal: Delete admin confirmation
-     ============================================================ -->
 <div class="modal-overlay" id="deleteAdminModal" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="modal-header">
@@ -194,48 +194,28 @@
   </div>
 </div>
 
-<!-- ============================================================
-     Modal: Point detail + edit
-     ============================================================ -->
 <div class="modal-overlay" id="pointDetailModal" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="modal-header">
       <h3 class="modal-title" id="pointModalTitle">Точка компании</h3>
       <button class="modal-close" data-close="pointDetailModal" aria-label="Закрыть">×</button>
     </div>
-    <div id="pointModalContent">
-      <div class="loading">Загрузка...</div>
-    </div>
+    <div id="pointModalContent"><div class="loading">Загрузка...</div></div>
   </div>
 </div>
 
-<!-- ============================================================
-     Scripts
-     ============================================================ -->
 <script src="../js/api.js"></script>
 <script>
-  /* ============================================================
-     Временно: id компании зашит явно.
-     В будущем сюда подставится id компании пользователя,
-     от имени которого выполняется запрос.
-     ============================================================ */
   var COMPANY_ID = 1;
 
-  /* ============================================================
-     State
-     ============================================================ */
   var state = {
-    /* Точки компании */
     pointsPage: 0, pointsTotalPages: 0, pointsTotalElements: 0, pointsPageSize: 10,
-
-    /* Администраторы компании */
     adminsPage: 0, adminsTotalPages: 0, adminsTotalElements: 0, adminsPageSize: 10,
     adminsIdFilter: '', adminsEmailFilter: '',
-    currentAdmins: [],     /* загруженная страница администраторов */
-    adminToDelete: null    /* id выбранного для удаления администратора */
+    currentAdmins: [], adminToDelete: null
   };
+  var companiesState = { page: 0, totalPages: 0, totalElements: 0, pageSize: 10, nameFilter: '', idFilter: '' };
 
-  /* Человекочитаемые статусы точки: [css-класс бейджа, подпись] */
   var POINT_STATUS_LABELS = {
     NEW:                     ['badge-process', 'Новая'],
     READY:                   ['badge-accept',  'Готова'],
@@ -245,37 +225,27 @@
   };
   var POINT_STATUSES = ['NEW', 'READY', 'IN_USE', 'IS_BEING_DECOMMISSIONED', 'DECOMMISSIONED'];
 
-  /* ============================================================
-     Utility helpers
-     ============================================================ */
   function esc(str) {
     if (str === null || str === undefined) return '';
-    return String(str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
-
   function pointStatusBadge(status) {
     if (!status) return '<span class="badge badge-default">—</span>';
     var pair = POINT_STATUS_LABELS[status] || ['badge-default', esc(status)];
     return '<span class="badge ' + pair[0] + '">' + pair[1] + '</span>';
   }
-
   function pointStatusLabel(status) {
     var pair = POINT_STATUS_LABELS[status];
     return pair ? pair[1] : esc(status || '');
   }
-
   function showAlert(containerId, message, type) {
     var el = document.getElementById(containerId);
     if (!el) return;
     if (!message) { el.innerHTML = ''; return; }
     el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
   }
-
   function openModal(id)  { document.getElementById(id).classList.add('open'); }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
   function renderPagination(containerId, currentPage, totalPages, handlerName) {
     var el = document.getElementById(containerId);
     if (!el) return;
@@ -290,241 +260,219 @@
         ' onclick="' + handlerName + '(' + (currentPage + 1) + ')">Вперёд →</button>';
   }
 
-  /* ============================================================
-     (1) Delete company
-     ============================================================ */
+  /* ===== Компании ===== */
+  function loadCompanies(page) {
+    if (page === undefined) page = 0;
+    companiesState.page = page;
+    document.getElementById('companiesContent').innerHTML = '<div class="loading">Загрузка...</div>';
+    document.getElementById('companiesPagination').innerHTML = '';
+    Api.getCompanies({
+      pageNumber: page, pageSize: companiesState.pageSize,
+      nameFilter: companiesState.nameFilter, companyId: companiesState.idFilter
+    })
+    .then(function (response) {
+      var companies = (response && response.data) ? response.data : [];
+      companiesState.totalPages    = response.totalPages    || 0;
+      companiesState.totalElements = response.totalElements || 0;
+      document.getElementById('companiesCountInfo').textContent = 'Найдено: ' + companiesState.totalElements;
+      if (companies.length === 0) {
+        document.getElementById('companiesContent').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">🏢</div><p>Компании не найдены</p></div>';
+        return;
+      }
+      var rows = companies.map(function (c) {
+        return '<tr><td style="width:80px;color:var(--text-muted)">' + esc(c.id) + '</td>' +
+          '<td><strong>' + esc(c.name || '—') + '</strong></td>' +
+          '<td>' + esc(c.description || '—') + '</td></tr>';
+      }).join('');
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="table-wrapper"><table>' +
+          '<thead><tr><th>ID</th><th>Название</th><th>Описание</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody></table></div>';
+      renderPagination('companiesPagination', companiesState.page, companiesState.totalPages, 'loadCompanies');
+    })
+    .catch(function (err) {
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки: ' + esc(err.message) + '</div>';
+    });
+  }
+  document.getElementById('companiesSearchBtn').addEventListener('click', function () {
+    companiesState.nameFilter = document.getElementById('companyNameFilter').value.trim();
+    companiesState.idFilter   = document.getElementById('companyIdFilter').value.trim();
+    loadCompanies(0);
+  });
+  document.getElementById('companiesResetBtn').addEventListener('click', function () {
+    document.getElementById('companyNameFilter').value = '';
+    document.getElementById('companyIdFilter').value   = '';
+    companiesState.nameFilter = ''; companiesState.idFilter = '';
+    loadCompanies(0);
+  });
+
+  /* ===== Удаление компании ===== */
   document.getElementById('deleteCompanyBtn').addEventListener('click', function () {
     showAlert('deleteCompanyAlert', '', 'error');
     openModal('deleteCompanyModal');
   });
-
   document.getElementById('confirmDeleteCompanyBtn').addEventListener('click', function () {
     var btn = document.getElementById('confirmDeleteCompanyBtn');
     btn.disabled = true; btn.textContent = 'Удаление...';
-
     Api.deleteCompany(COMPANY_ID)
       .then(function () {
         showAlert('deleteCompanyAlert', '✓ Компания удалена из системы.', 'success');
         setTimeout(function () { closeModal('deleteCompanyModal'); }, 1200);
       })
-      .catch(function (err) {
-        showAlert('deleteCompanyAlert', 'Ошибка: ' + esc(err.message), 'error');
-      })
-      .finally(function () {
-        btn.disabled = false; btn.textContent = 'Подтвердить удаление';
-      });
+      .catch(function (err) { showAlert('deleteCompanyAlert', 'Ошибка: ' + esc(err.message), 'error'); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Подтвердить удаление'; });
   });
 
-  /* ============================================================
-     (2) Create company point
-     ============================================================ */
+  /* ===== Создание точки ===== */
   document.getElementById('togglePointFormBtn').addEventListener('click', function () {
     document.getElementById('createPointForm').classList.toggle('hidden');
   });
-
   document.getElementById('createPointForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var btn    = document.getElementById('submitPointBtn');
     var url    = document.getElementById('pointUrl').value.trim();
     var format = document.getElementById('pointFormat').value.trim();
-
     showAlert('createPointAlert', '', 'success');
     if (!url) { showAlert('createPointAlert', 'Укажите URL точки.', 'error'); return; }
-
     btn.disabled = true; btn.textContent = 'Создание...';
-
     Api.createCompanyPoint({ url: url, format: format, companyId: COMPANY_ID })
       .then(function (result) {
-        showAlert('createPointAlert',
-          '✓ Точка <strong>#' + esc(result.id) + '</strong> создана!', 'success');
+        showAlert('createPointAlert', '✓ Точка <strong>#' + esc(result.id) + '</strong> создана!', 'success');
         document.getElementById('createPointForm').reset();
         loadPoints(0);
       })
-      .catch(function (err) {
-        showAlert('createPointAlert', 'Ошибка: ' + esc(err.message), 'error');
-      })
-      .finally(function () {
-        btn.disabled = false; btn.textContent = 'Создать точку';
-      });
+      .catch(function (err) { showAlert('createPointAlert', 'Ошибка: ' + esc(err.message), 'error'); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Создать точку'; });
   });
 
-  /* ============================================================
-     (3) Company points list
-     ============================================================ */
+  /* ===== Список точек ===== */
   function loadPoints(page) {
     if (page === undefined) page = 0;
     state.pointsPage = page;
     document.getElementById('pointsContent').innerHTML = '<div class="loading">Загрузка...</div>';
     document.getElementById('pointsPagination').innerHTML = '';
-
-    Api.getCompanyPoints({
-      pageNumber: page,
-      pageSize:   state.pointsPageSize,
-      companyId:  COMPANY_ID
-    })
-    .then(function (response) {
-      var points = (response && response.data) ? response.data : [];
-      state.pointsTotalPages    = response.totalPages    || 0;
-      state.pointsTotalElements = response.totalElements || 0;
-      document.getElementById('pointsCountInfo').textContent = 'Найдено: ' + state.pointsTotalElements;
-
-      if (points.length === 0) {
+    Api.getCompanyPoints({ pageNumber: page, pageSize: state.pointsPageSize, companyId: COMPANY_ID })
+      .then(function (response) {
+        var points = (response && response.data) ? response.data : [];
+        state.pointsTotalPages    = response.totalPages    || 0;
+        state.pointsTotalElements = response.totalElements || 0;
+        document.getElementById('pointsCountInfo').textContent = 'Найдено: ' + state.pointsTotalElements;
+        if (points.length === 0) {
+          document.getElementById('pointsContent').innerHTML =
+            '<div class="empty-state"><div class="empty-state-icon">📍</div><p>Точки не найдены</p></div>';
+          return;
+        }
+        var rows = points.map(function (p) {
+          return '<tr class="clickable" onclick="openPointDetail(' + p.id + ')">' +
+            '<td style="width:80px;color:var(--text-muted)">' + esc(p.id) + '</td>' +
+            '<td><strong>' + esc(p.url || '—') + '</strong></td>' +
+            '<td>' + esc(p.format || '—') + '</td>' +
+            '<td>' + pointStatusBadge(p.status) + '</td></tr>';
+        }).join('');
         document.getElementById('pointsContent').innerHTML =
-          '<div class="empty-state"><div class="empty-state-icon">📍</div><p>Точки не найдены</p></div>';
-        return;
-      }
-
-      var rows = points.map(function (p) {
-        return '<tr class="clickable" onclick="openPointDetail(' + p.id + ')">' +
-          '<td style="width:80px;color:var(--text-muted)">' + esc(p.id) + '</td>' +
-          '<td><strong>' + esc(p.url || '—') + '</strong></td>' +
-          '<td>' + esc(p.format || '—') + '</td>' +
-          '<td>' + pointStatusBadge(p.status) + '</td>' +
-        '</tr>';
-      }).join('');
-
-      document.getElementById('pointsContent').innerHTML =
-        '<div class="table-wrapper"><table>' +
-          '<thead><tr><th>ID</th><th>URL</th><th>Формат</th><th>Статус</th></tr></thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table></div>';
-
-      renderPagination('pointsPagination', state.pointsPage, state.pointsTotalPages, 'loadPoints');
-    })
-    .catch(function (err) {
-      document.getElementById('pointsContent').innerHTML =
-        '<div class="alert alert-error">Ошибка загрузки точек: ' + esc(err.message) + '</div>';
-    });
+          '<div class="table-wrapper"><table>' +
+            '<thead><tr><th>ID</th><th>URL</th><th>Формат</th><th>Статус</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table></div>';
+        renderPagination('pointsPagination', state.pointsPage, state.pointsTotalPages, 'loadPoints');
+      })
+      .catch(function (err) {
+        document.getElementById('pointsContent').innerHTML =
+          '<div class="alert alert-error">Ошибка загрузки точек: ' + esc(err.message) + '</div>';
+      });
   }
 
-  /* ============================================================
-     (4) Point detail + edit modal
-     ============================================================ */
+  /* ===== Точка: детали + редактирование ===== */
   function openPointDetail(id) {
     document.getElementById('pointModalTitle').textContent = 'Точка компании #' + id;
     document.getElementById('pointModalContent').innerHTML = '<div class="loading">Загрузка...</div>';
     openModal('pointDetailModal');
-
-    Api.getCompanyPoint(id)
-      .then(function (p) {
-        var statusOptions = POINT_STATUSES.map(function (s) {
-          var selected = (s === p.status) ? ' selected' : '';
-          return '<option value="' + s + '"' + selected + '>' + pointStatusLabel(s) + '</option>';
-        }).join('');
-
-        document.getElementById('pointModalContent').innerHTML =
-          '<div class="detail-grid" style="margin-bottom: 18px;">' +
-            '<div class="detail-item"><div class="detail-label">ID</div>' +
-              '<div class="detail-value"><strong>#' + esc(p.id) + '</strong></div></div>' +
-            '<div class="detail-item"><div class="detail-label">Текущий статус</div>' +
-              '<div class="detail-value">' + pointStatusBadge(p.status) + '</div></div>' +
-            '<div class="detail-item"><div class="detail-label">Формат</div>' +
-              '<div class="detail-value">' + esc(p.format || '—') + '</div></div>' +
-            '<div class="detail-item"><div class="detail-label">Точка альянса</div>' +
-              '<div class="detail-value">' + esc(p.alliancePointId || '—') + '</div></div>' +
+    Api.getCompanyPoint(id).then(function (p) {
+      var statusOptions = POINT_STATUSES.map(function (s) {
+        var selected = (s === p.status) ? ' selected' : '';
+        return '<option value="' + s + '"' + selected + '>' + pointStatusLabel(s) + '</option>';
+      }).join('');
+      document.getElementById('pointModalContent').innerHTML =
+        '<div class="detail-grid" style="margin-bottom: 18px;">' +
+          '<div class="detail-item"><div class="detail-label">ID</div><div class="detail-value"><strong>#' + esc(p.id) + '</strong></div></div>' +
+          '<div class="detail-item"><div class="detail-label">Текущий статус</div><div class="detail-value">' + pointStatusBadge(p.status) + '</div></div>' +
+          '<div class="detail-item"><div class="detail-label">Формат</div><div class="detail-value">' + esc(p.format || '—') + '</div></div>' +
+          '<div class="detail-item"><div class="detail-label">Точка альянса</div><div class="detail-value">' + esc(p.alliancePointId || '—') + '</div></div>' +
+        '</div>' +
+        '<form id="editPointForm" novalidate>' +
+          '<div class="form-group" style="margin-bottom: 14px;">' +
+            '<label class="form-label" for="editPointStatus">Статус</label>' +
+            '<select id="editPointStatus" class="form-control">' + statusOptions + '</select>' +
           '</div>' +
-
-          '<form id="editPointForm" novalidate>' +
-            '<div class="form-group" style="margin-bottom: 14px;">' +
-              '<label class="form-label" for="editPointStatus">Статус</label>' +
-              '<select id="editPointStatus" class="form-control">' + statusOptions + '</select>' +
-            '</div>' +
-            '<div class="form-group" style="margin-bottom: 14px;">' +
-              '<label class="form-label" for="editPointUrl">URL</label>' +
-              '<input type="text" id="editPointUrl" class="form-control" value="' + esc(p.url || '') + '" />' +
-            '</div>' +
-            '<div class="form-actions" style="justify-content: flex-end;">' +
-              '<div id="editPointAlert" style="flex:1;"></div>' +
-              '<button type="submit" id="savePointBtn" class="btn btn-primary">Сохранить</button>' +
-            '</div>' +
-          '</form>';
-
-        document.getElementById('editPointForm').addEventListener('submit', function (e) {
-          e.preventDefault();
-          var saveBtn   = document.getElementById('savePointBtn');
-          var newStatus = document.getElementById('editPointStatus').value;
-          var newUrl    = document.getElementById('editPointUrl').value.trim();
-
-          saveBtn.disabled = true; saveBtn.textContent = 'Сохранение...';
-          Api.updateCompanyPoint(id, {
-            newPointStatus:     newStatus,
-            newCompanyPointUrl: newUrl
-          })
+          '<div class="form-group" style="margin-bottom: 14px;">' +
+            '<label class="form-label" for="editPointUrl">URL</label>' +
+            '<input type="text" id="editPointUrl" class="form-control" value="' + esc(p.url || '') + '" />' +
+          '</div>' +
+          '<div class="form-actions" style="justify-content: flex-end;">' +
+            '<div id="editPointAlert" style="flex:1;"></div>' +
+            '<button type="submit" id="savePointBtn" class="btn btn-primary">Сохранить</button>' +
+          '</div>' +
+        '</form>';
+      document.getElementById('editPointForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var saveBtn   = document.getElementById('savePointBtn');
+        var newStatus = document.getElementById('editPointStatus').value;
+        var newUrl    = document.getElementById('editPointUrl').value.trim();
+        saveBtn.disabled = true; saveBtn.textContent = 'Сохранение...';
+        Api.updateCompanyPoint(id, { newPointStatus: newStatus, newCompanyPointUrl: newUrl })
           .then(function () {
             showAlert('editPointAlert', '✓ Сохранено', 'success');
             loadPoints(state.pointsPage);
             setTimeout(function () { closeModal('pointDetailModal'); }, 800);
           })
-          .catch(function (err) {
-            showAlert('editPointAlert', 'Ошибка: ' + esc(err.message), 'error');
-          })
-          .finally(function () {
-            saveBtn.disabled = false; saveBtn.textContent = 'Сохранить';
-          });
-        });
-      })
-      .catch(function (err) {
-        document.getElementById('pointModalContent').innerHTML =
-          '<div class="alert alert-error">Ошибка загрузки точки: ' + esc(err.message) + '</div>';
+          .catch(function (err) { showAlert('editPointAlert', 'Ошибка: ' + esc(err.message), 'error'); })
+          .finally(function () { saveBtn.disabled = false; saveBtn.textContent = 'Сохранить'; });
       });
+    }).catch(function (err) {
+      document.getElementById('pointModalContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки точки: ' + esc(err.message) + '</div>';
+    });
   }
 
-  /* ============================================================
-     (5) Company admins list
-     ============================================================ */
+  /* ===== Администраторы компании ===== */
   function loadAdmins(page) {
     if (page === undefined) page = 0;
     state.adminsPage = page;
     document.getElementById('adminsContent').innerHTML = '<div class="loading">Загрузка...</div>';
     document.getElementById('adminsPagination').innerHTML = '';
-
-    /* linkedCompanyId и userRole — обязательны по условию.
-       userId и userEmailSubstr backend пока игнорирует (нужно добавить в UserFilter). */
     var userFilter = { linkedCompanyId: COMPANY_ID, userRole: 'COMPANY_ADMIN' };
     if (state.adminsIdFilter)    userFilter.userId = Number(state.adminsIdFilter);
     if (state.adminsEmailFilter) userFilter.userEmailSubstr = state.adminsEmailFilter;
-
-    Api.getUsers({
-      pageNumber: page,
-      pageSize:   state.adminsPageSize,
-      userFilter: userFilter
-    })
-    .then(function (response) {
-      var admins = (response && response.data) ? response.data : [];
-      state.currentAdmins       = admins;
-      state.adminsTotalPages    = response.totalPages    || 0;
-      state.adminsTotalElements = response.totalElements || 0;
-      document.getElementById('adminsCountInfo').textContent = 'Найдено: ' + state.adminsTotalElements;
-
-      if (admins.length === 0) {
+    Api.getUsers({ pageNumber: page, pageSize: state.adminsPageSize, userFilter: userFilter })
+      .then(function (response) {
+        var admins = (response && response.data) ? response.data : [];
+        state.currentAdmins       = admins;
+        state.adminsTotalPages    = response.totalPages    || 0;
+        state.adminsTotalElements = response.totalElements || 0;
+        document.getElementById('adminsCountInfo').textContent = 'Найдено: ' + state.adminsTotalElements;
+        if (admins.length === 0) {
+          document.getElementById('adminsContent').innerHTML =
+            '<div class="empty-state"><div class="empty-state-icon">👥</div><p>Администраторы не найдены</p></div>';
+          return;
+        }
+        var rows = admins.map(function (u) {
+          return '<tr><td style="width:80px;color:var(--text-muted)">' + esc(u.id) + '</td>' +
+            '<td><strong>' + esc(u.email || '—') + '</strong></td>' +
+            '<td style="width:60px;text-align:center;">' +
+              '<button class="btn-trash" title="Удалить администратора" onclick="confirmDeleteAdmin(' + u.id + ')">🗑</button>' +
+            '</td></tr>';
+        }).join('');
         document.getElementById('adminsContent').innerHTML =
-          '<div class="empty-state"><div class="empty-state-icon">👥</div><p>Администраторы не найдены</p></div>';
-        return;
-      }
-
-      var rows = admins.map(function (u) {
-        return '<tr>' +
-          '<td style="width:80px;color:var(--text-muted)">' + esc(u.id) + '</td>' +
-          '<td><strong>' + esc(u.email || '—') + '</strong></td>' +
-          '<td style="width:60px;text-align:center;">' +
-            '<button class="btn-trash" title="Удалить администратора" ' +
-              'onclick="confirmDeleteAdmin(' + u.id + ')">🗑</button>' +
-          '</td>' +
-        '</tr>';
-      }).join('');
-
-      document.getElementById('adminsContent').innerHTML =
-        '<div class="table-wrapper"><table>' +
-          '<thead><tr><th>ID</th><th>Email</th><th></th></tr></thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table></div>';
-
-      renderPagination('adminsPagination', state.adminsPage, state.adminsTotalPages, 'loadAdmins');
-    })
-    .catch(function (err) {
-      document.getElementById('adminsContent').innerHTML =
-        '<div class="alert alert-error">Ошибка загрузки администраторов: ' + esc(err.message) + '</div>';
-    });
+          '<div class="table-wrapper"><table>' +
+            '<thead><tr><th>ID</th><th>Email</th><th></th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table></div>';
+        renderPagination('adminsPagination', state.adminsPage, state.adminsTotalPages, 'loadAdmins');
+      })
+      .catch(function (err) {
+        document.getElementById('adminsContent').innerHTML =
+          '<div class="alert alert-error">Ошибка загрузки администраторов: ' + esc(err.message) + '</div>';
+      });
   }
 
   document.getElementById('adminsSearchBtn').addEventListener('click', function () {
@@ -539,16 +487,12 @@
     loadAdmins(0);
   });
 
-  /* ============================================================
-     (6) Delete company admin
-     ============================================================ */
   function confirmDeleteAdmin(id) {
     var admin = state.currentAdmins.filter(function (u) { return u.id === id; })[0];
     state.adminToDelete = id;
     var login = admin ? (admin.email || '') : '';
     document.getElementById('deleteAdminText').innerHTML =
-      '<strong>Внимание!</strong> Удалить администратора компании ' +
-      '<strong>#' + esc(id) + '</strong> (' + esc(login) + ')? Действие необратимо.';
+      '<strong>Внимание!</strong> Удалить администратора компании <strong>#' + esc(id) + '</strong> (' + esc(login) + ')? Действие необратимо.';
     showAlert('deleteAdminAlert', '', 'error');
     openModal('deleteAdminModal');
   }
@@ -557,62 +501,32 @@
     if (!state.adminToDelete) return;
     var btn = document.getElementById('confirmDeleteAdminBtn');
     btn.disabled = true; btn.textContent = 'Удаление...';
-
     Api.deleteUser(state.adminToDelete)
-      .then(function () {
-        closeModal('deleteAdminModal');
-        state.adminToDelete = null;
-        loadAdmins(state.adminsPage);
-      })
-      .catch(function (err) {
-        showAlert('deleteAdminAlert', 'Ошибка: ' + esc(err.message), 'error');
-      })
-      .finally(function () {
-        btn.disabled = false; btn.textContent = 'Подтвердить удаление';
-      });
+      .then(function () { closeModal('deleteAdminModal'); state.adminToDelete = null; loadAdmins(state.adminsPage); })
+      .catch(function (err) { showAlert('deleteAdminAlert', 'Ошибка: ' + esc(err.message), 'error'); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Подтвердить удаление'; });
   });
 
-  /* ============================================================
-     (7) Create company admin
-     ============================================================ */
   document.getElementById('createAdminForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var btn      = document.getElementById('submitAdminBtn');
     var email    = document.getElementById('adminEmail').value.trim();
     var password = document.getElementById('adminPassword').value;
-
     showAlert('createAdminAlert', '', 'success');
     if (!email)    { showAlert('createAdminAlert', 'Укажите email.', 'error'); return; }
     if (!password) { showAlert('createAdminAlert', 'Укажите пароль.', 'error'); return; }
-
     btn.disabled = true; btn.textContent = 'Создание...';
-
-    /* password backend пока не использует — будет добавлено позже.
-       role и linkedCompanyId заданы по условию. */
-    Api.createUser({
-      email:           email,
-      password:        password,
-      role:            'COMPANY_ADMIN',
-      linkedCompanyId: COMPANY_ID
-    })
-    .then(function (result) {
-      showAlert('createAdminAlert',
-        '✓ Администратор <strong>#' + esc(result.id) + '</strong> (' +
-        esc(result.email) + ') создан!', 'success');
-      document.getElementById('createAdminForm').reset();
-      loadAdmins(0);
-    })
-    .catch(function (err) {
-      showAlert('createAdminAlert', 'Ошибка: ' + esc(err.message), 'error');
-    })
-    .finally(function () {
-      btn.disabled = false; btn.textContent = 'Создать администратора';
-    });
+    Api.createUser({ email: email, password: password, role: 'COMPANY_ADMIN', linkedCompanyId: COMPANY_ID })
+      .then(function (result) {
+        showAlert('createAdminAlert', '✓ Администратор <strong>#' + esc(result.id) + '</strong> (' + esc(result.email) + ') создан!', 'success');
+        document.getElementById('createAdminForm').reset();
+        loadAdmins(0);
+      })
+      .catch(function (err) { showAlert('createAdminAlert', 'Ошибка: ' + esc(err.message), 'error'); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Создать администратора'; });
   });
 
-  /* ============================================================
-     Modal close handlers (× / Отмена / overlay / Escape)
-     ============================================================ */
+  /* ===== Modal close ===== */
   document.querySelectorAll('[data-close]').forEach(function (el) {
     el.addEventListener('click', function () { closeModal(el.dataset.close); });
   });
@@ -623,27 +537,26 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      document.querySelectorAll('.modal-overlay.open').forEach(function (m) {
-        m.classList.remove('open');
-      });
+      document.querySelectorAll('.modal-overlay.open').forEach(function (m) { m.classList.remove('open'); });
     }
   });
 
-  /* ============================================================
-     Tab switching
-     ============================================================ */
-  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+  /* ===== Tab switching (top-nav) ===== */
+  document.querySelectorAll('.top-nav-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.top-nav-btn').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
       document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
       var panel = document.getElementById('tab-' + btn.dataset.tab);
       if (panel) panel.classList.add('active');
-
-      if (btn.dataset.tab === 'points') loadPoints(0);
-      if (btn.dataset.tab === 'admins') loadAdmins(0);
+      if (btn.dataset.tab === 'companies')  loadCompanies(0);
+      if (btn.dataset.tab === 'management') loadPoints(0);
+      if (btn.dataset.tab === 'admins')     loadAdmins(0);
     });
   });
+
+  /* ===== Init: предзагрузка для активной по умолчанию вкладки ===== */
+  loadPoints(0);
 </script>
 
 </body>

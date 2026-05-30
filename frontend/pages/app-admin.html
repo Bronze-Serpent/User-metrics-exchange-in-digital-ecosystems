@@ -9,27 +9,75 @@
 <body>
 
 <!-- ============================================================
-     Header
+     Top navigation
      ============================================================ -->
-<header class="page-header">
-  <div class="container">
-    <a href="../index.html" class="btn btn-ghost">← Назад</a>
-    <span class="page-title">⚙️ Страница администратора приложения</span>
-  </div>
-</header>
+<nav class="top-nav">
+  <button class="top-nav-btn" data-tab="about">О нас</button>
+  <button class="top-nav-btn" data-tab="companies">Компании</button>
+  <button class="top-nav-btn active" data-tab="register">Регистрация компании</button>
+  <button class="top-nav-btn" data-tab="alliances">Альянсы</button>
+  <a href="../index.html" class="top-nav-home">На главную</a>
+</nav>
 
 <!-- ============================================================
      Main Content
      ============================================================ -->
 <main class="container">
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="register">🏢 Регистрация компании</button>
-    <button class="tab-btn"        data-tab="alliances">🤝 Альянсы</button>
+  <!-- ========================================================
+       О нас
+       ======================================================== -->
+  <div class="tab-panel" id="tab-about">
+    <div class="card about-page">
+      <h2>О Metrics Exchange</h2>
+      <p>Добро пожаловать в Metrics Exchange — место, где компании дружат рейтингами, как будто это коллекция марок.</p>
+
+      <h3>Зачем это всё?</h3>
+      <p>Чтобы пользователь мог переносить заработанную репутацию из одной компании в другую, не начиная каждый раз с нуля как новорождённый.</p>
+
+      <h3>Что позволяет делать</h3>
+      <ul>
+        <li>Регистрировать компании и собирать их в альянсы.</li>
+        <li>Создавать точки обмена метриками и связывать их в альянсах.</li>
+        <li>Подавать заявки на перенос профиля и выносить по ним решения.</li>
+        <li>Управлять администраторами компании.</li>
+      </ul>
+
+      <h3>Сколько нам лет?</h3>
+      <p>Целых 0 лет — гордый возраст бета-версии. Когда-нибудь нам стукнет один, обещаем устроить праздник.</p>
+
+      <h3>Планы на будущее</h3>
+      <ul>
+        <li>Авторизация — чтобы перестать наконец прописывать <code>companyId = 1</code>.</li>
+        <li>Реальная многопользовательская работа.</li>
+        <li>Скромный, но уверенный захват рынка пользовательских метрик.</li>
+      </ul>
+    </div>
   </div>
 
   <!-- ========================================================
-       Tab 1: Регистрация компании
+       Компании
+       ======================================================== -->
+  <div class="tab-panel" id="tab-companies">
+    <div class="card">
+      <h2 class="card-title">Компании</h2>
+      <div class="toolbar">
+        <input type="text" id="companyNameFilter" class="form-control"
+               placeholder="Поиск по названию..." style="max-width: 240px;" />
+        <input type="number" id="companyIdFilter" class="form-control"
+               placeholder="ID компании" style="max-width: 140px;" />
+        <button id="companiesSearchBtn" class="btn btn-primary btn-sm">Найти</button>
+        <button id="companiesResetBtn"  class="btn btn-secondary btn-sm">Сбросить</button>
+        <span class="toolbar-spacer"></span>
+        <span id="companiesCountInfo" class="page-info"></span>
+      </div>
+      <div id="companiesContent"><div class="loading">Загрузка...</div></div>
+      <div class="pagination" id="companiesPagination"></div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       Регистрация компании
        ======================================================== -->
   <div class="tab-panel active" id="tab-register">
 
@@ -99,11 +147,10 @@
   </div>
 
   <!-- ========================================================
-       Tab 2: Альянсы
+       Альянсы
        ======================================================== -->
   <div class="tab-panel" id="tab-alliances">
 
-    <!-- Create alliance -->
     <div class="card">
       <div class="toolbar" style="margin-bottom: 0;">
         <h2 class="card-title" style="margin: 0;">Создание альянса</h2>
@@ -128,7 +175,6 @@
       </form>
     </div>
 
-    <!-- Alliances list -->
     <div class="card">
       <div class="toolbar">
         <input type="text" id="allianceNameFilter" class="form-control"
@@ -155,11 +201,8 @@
   /* ============================================================
      State
      ============================================================ */
-  var state = {
-    /* Альянсы */
-    alPage: 0, alTotalPages: 0, alTotalElements: 0, alPageSize: 10,
-    alNameFilter: '', alIdFilter: ''
-  };
+  var companiesState = { page: 0, totalPages: 0, totalElements: 0, pageSize: 10, nameFilter: '', idFilter: '' };
+  var alliancesState = { page: 0, totalPages: 0, totalElements: 0, pageSize: 10, nameFilter: '', idFilter: '' };
 
   /* ============================================================
      Utility helpers
@@ -193,7 +236,69 @@
   }
 
   /* ============================================================
-     (1) Регистрация компании
+     Компании
+     ============================================================ */
+  function loadCompanies(page) {
+    if (page === undefined) page = 0;
+    companiesState.page = page;
+    document.getElementById('companiesContent').innerHTML = '<div class="loading">Загрузка...</div>';
+    document.getElementById('companiesPagination').innerHTML = '';
+    Api.getCompanies({
+      pageNumber: page,
+      pageSize:   companiesState.pageSize,
+      nameFilter: companiesState.nameFilter,
+      companyId:  companiesState.idFilter
+    })
+    .then(function (response) {
+      var companies = (response && response.data) ? response.data : [];
+      companiesState.totalPages    = response.totalPages    || 0;
+      companiesState.totalElements = response.totalElements || 0;
+      document.getElementById('companiesCountInfo').textContent = 'Найдено: ' + companiesState.totalElements;
+      if (companies.length === 0) {
+        document.getElementById('companiesContent').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">🏢</div><p>Компании не найдены</p></div>';
+        return;
+      }
+      var rows = companies.map(function (c) {
+        return '<tr>' +
+          '<td style="width:80px;color:var(--text-muted)">' + esc(c.id) + '</td>' +
+          '<td><strong>' + esc(c.name || '—') + '</strong></td>' +
+          '<td>' + esc(c.description || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="table-wrapper"><table>' +
+          '<thead><tr><th>ID</th><th>Название</th><th>Описание</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+      renderPagination('companiesPagination', companiesState.page, companiesState.totalPages, 'loadCompanies');
+    })
+    .catch(function (err) {
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  document.getElementById('companiesSearchBtn').addEventListener('click', function () {
+    companiesState.nameFilter = document.getElementById('companyNameFilter').value.trim();
+    companiesState.idFilter   = document.getElementById('companyIdFilter').value.trim();
+    loadCompanies(0);
+  });
+  document.getElementById('companiesResetBtn').addEventListener('click', function () {
+    document.getElementById('companyNameFilter').value = '';
+    document.getElementById('companyIdFilter').value   = '';
+    companiesState.nameFilter = ''; companiesState.idFilter = '';
+    loadCompanies(0);
+  });
+  document.getElementById('companyNameFilter').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('companiesSearchBtn').click();
+  });
+  document.getElementById('companyIdFilter').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('companiesSearchBtn').click();
+  });
+
+  /* ============================================================
+     Регистрация компании
      ============================================================ */
   document.getElementById('createCompanyForm').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -201,7 +306,6 @@
     var name = document.getElementById('companyName').value.trim();
     showAlert('createCompanyAlert', '', 'success');
     if (!name) { showAlert('createCompanyAlert', 'Укажите название компании.', 'error'); return; }
-
     btn.disabled = true; btn.textContent = 'Создание...';
     Api.createCompany({
       name:                            name,
@@ -228,14 +332,11 @@
     var email     = document.getElementById('agentEmail').value.trim();
     var password  = document.getElementById('agentPassword').value;
     var companyId = document.getElementById('agentCompanyId').value.trim();
-
     showAlert('createAgentAlert', '', 'success');
     if (!email)     { showAlert('createAgentAlert', 'Укажите email.', 'error'); return; }
     if (!password)  { showAlert('createAgentAlert', 'Укажите пароль.', 'error'); return; }
     if (!companyId) { showAlert('createAgentAlert', 'Укажите ID компании.', 'error'); return; }
-
     btn.disabled = true; btn.textContent = 'Создание...';
-    /* role задаётся под капотом как COMPANY_AGENT; password backend пока игнорирует */
     Api.createUser({
       email:           email,
       password:        password,
@@ -254,7 +355,7 @@
   });
 
   /* ============================================================
-     (2) Альянсы
+     Альянсы
      ============================================================ */
   document.getElementById('createAllianceForm').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -262,7 +363,6 @@
     var name = document.getElementById('allianceName').value.trim();
     showAlert('createAllianceAlert', '', 'success');
     if (!name) { showAlert('createAllianceAlert', 'Укажите название альянса.', 'error'); return; }
-
     btn.disabled = true; btn.textContent = 'Создание...';
     Api.createAlliance({
       name:        name,
@@ -282,28 +382,25 @@
 
   function loadAlliances(page) {
     if (page === undefined) page = 0;
-    state.alPage = page;
+    alliancesState.page = page;
     document.getElementById('alliancesContent').innerHTML = '<div class="loading">Загрузка...</div>';
     document.getElementById('alliancesPagination').innerHTML = '';
-
     Api.getAlliances({
       pageNumber: page,
-      pageSize:   state.alPageSize,
-      nameFilter: state.alNameFilter,
-      allianceId: state.alIdFilter
+      pageSize:   alliancesState.pageSize,
+      nameFilter: alliancesState.nameFilter,
+      allianceId: alliancesState.idFilter
     })
     .then(function (response) {
       var alliances = (response && response.data) ? response.data : [];
-      state.alTotalPages    = response.totalPages    || 0;
-      state.alTotalElements = response.totalElements || 0;
-      document.getElementById('alliancesCountInfo').textContent = 'Найдено: ' + state.alTotalElements;
-
+      alliancesState.totalPages    = response.totalPages    || 0;
+      alliancesState.totalElements = response.totalElements || 0;
+      document.getElementById('alliancesCountInfo').textContent = 'Найдено: ' + alliancesState.totalElements;
       if (alliances.length === 0) {
         document.getElementById('alliancesContent').innerHTML =
           '<div class="empty-state"><div class="empty-state-icon">🤝</div><p>Альянсы не найдены</p></div>';
         return;
       }
-
       var rows = alliances.map(function (a) {
         return '<tr class="clickable" onclick="openAlliancePage(' + a.id + ')">' +
           '<td style="width:80px;color:var(--text-muted)">' + esc(a.id) + '</td>' +
@@ -311,14 +408,12 @@
           '<td>' + esc(a.description || '—') + '</td>' +
         '</tr>';
       }).join('');
-
       document.getElementById('alliancesContent').innerHTML =
         '<div class="table-wrapper"><table>' +
           '<thead><tr><th>ID</th><th>Название</th><th>Описание</th></tr></thead>' +
           '<tbody>' + rows + '</tbody>' +
         '</table></div>';
-
-      renderPagination('alliancesPagination', state.alPage, state.alTotalPages, 'loadAlliances');
+      renderPagination('alliancesPagination', alliancesState.page, alliancesState.totalPages, 'loadAlliances');
     })
     .catch(function (err) {
       document.getElementById('alliancesContent').innerHTML =
@@ -327,38 +422,37 @@
   }
 
   document.getElementById('alliancesSearchBtn').addEventListener('click', function () {
-    state.alNameFilter = document.getElementById('allianceNameFilter').value.trim();
-    state.alIdFilter   = document.getElementById('allianceIdFilter').value.trim();
+    alliancesState.nameFilter = document.getElementById('allianceNameFilter').value.trim();
+    alliancesState.idFilter   = document.getElementById('allianceIdFilter').value.trim();
     loadAlliances(0);
   });
   document.getElementById('alliancesResetBtn').addEventListener('click', function () {
     document.getElementById('allianceNameFilter').value = '';
     document.getElementById('allianceIdFilter').value   = '';
-    state.alNameFilter = ''; state.alIdFilter = '';
+    alliancesState.nameFilter = ''; alliancesState.idFilter = '';
     loadAlliances(0);
   });
 
-  /* Свёртывание/разворачивание формы создания альянса */
   document.getElementById('toggleAllianceFormBtn').addEventListener('click', function () {
     document.getElementById('createAllianceForm').classList.toggle('hidden');
   });
 
-  /* Открывает отдельную страницу альянса в новой вкладке */
   function openAlliancePage(id) {
     window.open('alliance.html?id=' + encodeURIComponent(id), '_blank');
   }
 
   /* ============================================================
-     Tab switching
+     Tab switching (top-nav)
      ============================================================ */
-  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+  document.querySelectorAll('.top-nav-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.top-nav-btn').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
       document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
       var panel = document.getElementById('tab-' + btn.dataset.tab);
       if (panel) panel.classList.add('active');
 
+      if (btn.dataset.tab === 'companies') loadCompanies(0);
       if (btn.dataset.tab === 'alliances') loadAlliances(0);
     });
   });
