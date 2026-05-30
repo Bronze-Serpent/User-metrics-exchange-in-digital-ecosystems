@@ -17,7 +17,7 @@ public class WebServerConfigLogger {
         if (event.getWebServer() instanceof TomcatWebServer tomcatWebServer) {
             if (tomcatWebServer.getTomcat().getConnector().getProtocolHandler()
                     instanceof AbstractHttp11Protocol<?> coyoteAbstractProtocol) {
-                log.info("Tomcat web server работает с максимальноым количеством потоков равным: {}", coyoteAbstractProtocol.getMaxThreads());
+                log.info("Tomcat web server работает с максимальным количеством потоков равным: {}", coyoteAbstractProtocol.getMaxThreads());
             }
         }
     }

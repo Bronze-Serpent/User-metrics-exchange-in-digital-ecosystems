@@ -20,8 +20,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 
@@ -36,6 +38,7 @@ public class UserService implements UserDetailsService {
     private final UserMapper userMapper;
     private final PredicateDataMapper predicateDataMapper;
     private final SortDataMapper sortDataMapper;
+    private final PasswordEncoder passwordEncoder;
 
 
     @Transactional
@@ -45,6 +48,10 @@ public class UserService implements UserDetailsService {
                 .flatMap(companyRepository::findById)
                 .orElse(null);
         creatingUser.setLinkedCompany(linkedCompanyEntity);
+        creatingUser.setPasswordHash(Optional.ofNullable(createUserDto.getPassword())
+                .filter(StringUtils::hasText)
+                .map(passwordEncoder::encode)
+                .orElseThrow(() -> new IllegalArgumentException("Пароль не может быть пустым при создании пользователя"))); //TODO: сделать отдельный рест на изменение пароля у пользователя (админам приложения доступен + самим пользователям)
 
         return userMapper.toUserDto(userRepository.save(creatingUser));
     }

@@ -15,4 +15,5 @@ public class CreateUserDto {
     String email;
     UserRole role;
     Long linkedCompanyId;
+    String password; // TODO: сделать так, чтобы у пользователей которых регистрируют в системе а не у клиентов не передавался пароль, а он генерировался в backend и возвращался в ответе
 }

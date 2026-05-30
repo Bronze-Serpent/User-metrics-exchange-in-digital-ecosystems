@@ -3,8 +3,12 @@ package com.barabanov.metricsExchange.mapper;
 import com.barabanov.metricsExchange.entity.CompanyEntity;
 import com.barabanov.metricsExchange.interfaces.rest.dto.CompanyDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.CompanyIdNameDto;
+import com.barabanov.metricsExchange.interfaces.rest.dto.CompanyUpdateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.CreateCompanyDto;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 
@@ -17,4 +21,7 @@ public interface CompanyMapper {
     CompanyDto mapToCompanyDto(CompanyEntity source);
 
     CompanyIdNameDto mapToCompanyIdNameDto(CompanyEntity source);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void mergeUpdateToEntity(CompanyUpdateDto source, @MappingTarget CompanyEntity target);
 }

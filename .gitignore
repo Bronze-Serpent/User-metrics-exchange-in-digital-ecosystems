@@ -1,4 +1,6 @@
 HELP.md
+
+docs/.$request-flow.drawio.bkp
 target/
 backend/.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

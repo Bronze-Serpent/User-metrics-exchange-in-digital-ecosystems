@@ -36,6 +36,14 @@ public class CompanyController {
     }
 
 
+    @PutMapping("/company/{companyId}")
+    public CompanyDto updateCompany(@PathVariable Long companyId, @RequestBody CompanyUpdateDto companyUpdateDto) {
+
+        log.info("Получен запрос на обновление компании с id: {}", companyId);
+        return companyService.updateCompany(companyId, companyUpdateDto);
+    }
+
+
     // Рест на удаление компании
     @DeleteMapping("/company/{companyId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

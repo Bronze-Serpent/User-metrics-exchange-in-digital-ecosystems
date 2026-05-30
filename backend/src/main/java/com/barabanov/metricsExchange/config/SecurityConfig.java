@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 
@@ -12,7 +14,7 @@ import java.util.List;
 
 
 @Configuration
-public class SpringSecurityConfig {
+public class SecurityConfig {
 
 
     @Bean
@@ -26,18 +28,28 @@ public class SpringSecurityConfig {
                     return configuration;
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated())
-                .formLogin(form -> form
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+// Если не будет автоматически открыт для preflight запрос (отправляется чтобы выяснить разрешает ли сервер кросс доменный запрос с такими методами и хэдерами).
+// Для него не должно быть авторизации
+//                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .anyRequest().authenticated())
+//                .formLogin(form -> form
 //                                .loginPage("/login") // Custom HTML login page mapping
 //                        .loginProcessingUrl("/perform_login") // URL where the form submits credentials
 //                                .usernameParameter("email") // Custom input name for username
 //                                .passwordParameter("pass") // Custom input name for password
-                                .defaultSuccessUrl("/dashboard", true) // Redirect here after successful login
+//                                .defaultSuccessUrl("/dashboard", true) // Redirect here after successful login
 //                        .failureUrl("/login?error=true") // Redirect here on failed login
-                                .permitAll()
-                )
+//                                .permitAll()
+//                )
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();
+    }
+
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 }

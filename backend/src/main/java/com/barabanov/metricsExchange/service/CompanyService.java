@@ -44,6 +44,16 @@ public class CompanyService {
 
 
     @Transactional
+    public CompanyDto updateCompany(Long companyId, CompanyUpdateDto companyUpdateDto) {
+        CompanyEntity updatingCompany = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию с id: %s", companyId)));
+        companyMapper.mergeUpdateToEntity(companyUpdateDto, updatingCompany);
+
+        return companyMapper.mapToCompanyDto(companyRepository.save(updatingCompany));
+    }
+
+
+    @Transactional
     public void deleteCompany(Long companyId) {
 
         CompanyEntity deletingCompany = companyRepository.findById(companyId)

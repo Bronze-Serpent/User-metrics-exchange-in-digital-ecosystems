@@ -1,0 +1,102 @@
+<mxfile host="Electron" agent="claude">
+  <diagram id="request-flow" name="Request flow">
+    <mxGraphModel dx="2814" dy="980" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fillColor=none;strokeColor=none;" value="Поток запросов: браузер ↔ IDEA web-server ↔ Spring Boot ↔ БД" vertex="1">
+          <mxGeometry height="30" width="1090" x="40" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="browser" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;spacingTop=10;" value="&lt;b&gt;Браузер (пользователь)&lt;/b&gt;&#xa;&#xa;HTML/CSS/JS, fetch()&#xa;CORS-проверки" vertex="1">
+          <mxGeometry height="120" width="220" x="60" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="idea" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;verticalAlign=top;spacingTop=10;" value="&lt;b&gt;IntelliJ IDEA built-in web-server&lt;/b&gt;&#xa;&#xa;http://localhost:63342&#xa;Раздаёт статику из проекта&#xa;(HTML/CSS/JS из frontend/)" vertex="1">
+          <mxGeometry height="120" width="260" x="430" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="backend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;spacingTop=10;" value="&lt;b&gt;Spring Boot REST API&lt;/b&gt;&#xa;&#xa;http://localhost:8080&#xa;/user-exchange-metrics/...&#xa;Контроллеры → сервисы → JPA" vertex="1">
+          <mxGeometry height="120" width="260" x="30" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="db" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;verticalAlign=top;spacingTop=10;" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&#xa;&#xa;База данных" vertex="1">
+          <mxGeometry height="120" width="180" x="860" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="browser" style="endArrow=classic;html=1;rounded=0;fontSize=11;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;strokeColor=#1f5582;strokeWidth=2;" target="idea" value="1) GET /User-metrics.../frontend/pages/user.html (и css/js)">
+          <mxGeometry relative="1" x="-0.3333" y="40" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="idea" style="endArrow=classic;html=1;rounded=0;fontSize=11;dashed=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" target="browser" value="2) 200 OK + содержимое файлов с диска">
+          <mxGeometry relative="1" x="-0.0667" y="20" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="browser" style="endArrow=classic;html=1;rounded=0;fontSize=11;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f5582;strokeWidth=2;" target="backend" value="3) (для POST с JSON) CORS-preflight: OPTIONS&#xa;Origin: http://localhost:63342">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-330" y="130" />
+              <mxPoint x="-330" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="backend" style="endArrow=classic;html=1;rounded=0;fontSize=11;dashed=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.165;entryY=1.031;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;entryPerimeter=0;" target="browser" value="4) 200 OK&#xa;Access-Control-Allow-Origin: http://localhost:63342&#xa;Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS&#xa;Access-Control-Allow-Headers: *">
+          <mxGeometry relative="1" x="0.5036" y="-1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="95" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="browser" style="endArrow=classic;html=1;rounded=0;fontSize=11;exitX=0.858;exitY=1.01;exitDx=0;exitDy=0;entryX=0.848;entryY=0.038;entryDx=0;entryDy=0;strokeColor=#1f5582;strokeWidth=2;entryPerimeter=0;exitPerimeter=0;" target="backend" value="5) POST /user-exchange-metrics/users  (JSON-тело)&#xa;Content-Type: application/json&#xa;Origin: http://localhost:63342">
+          <mxGeometry relative="1" x="0.4189" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="250" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="backend" style="endArrow=classic;html=1;rounded=0;fontSize=11;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" target="db" value="6) SQL (через JPA/Hibernate)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="db" style="endArrow=classic;html=1;rounded=0;fontSize=11;dashed=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;strokeColor=#b85450;strokeWidth=2;" target="backend" value="7) ResultSet → Entity">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="backend" style="endArrow=classic;html=1;rounded=0;fontSize=11;dashed=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" target="browser" value="8) 200 OK + JSON-ответ (DTO, сериализованный Jackson)&#xa;Access-Control-Allow-Origin: http://localhost:63342">
+          <mxGeometry relative="1" x="-0.1852" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="-120" y="400" />
+              <mxPoint x="-120" y="340" />
+              <mxPoint x="-120" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=0;" value="" vertex="1">
+          <mxGeometry height="200" width="1000" x="60" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;fillColor=none;strokeColor=none;" value="Кратко о ключевых моментах" vertex="1">
+          <mxGeometry height="20" width="500" x="80" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fillColor=none;strokeColor=none;" value="• Сплошные стрелки — запросы (browser → server). Пунктирные — ответы." vertex="1">
+          <mxGeometry height="20" width="900" x="80" y="595" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-2" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fillColor=none;strokeColor=none;" value="• Порт 63342 принадлежит встроенному web-серверу IntelliJ IDEA — он только раздаёт статику из проекта." vertex="1">
+          <mxGeometry height="20" width="980" x="80" y="615" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-3" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fillColor=none;strokeColor=none;" value="• Порт 8080 — Spring Boot. Это разные origins (63342 ≠ 8080), поэтому браузер делает CORS-preflight перед &quot;сложными&quot; запросами." vertex="1">
+          <mxGeometry height="20" width="980" x="80" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-4" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fillColor=none;strokeColor=none;" value="• &quot;Сложные&quot; запросы — POST с Content-Type: application/json, PUT, DELETE, или с кастомными заголовками. Простые (GET / form-POST) идут без preflight." vertex="1">
+          <mxGeometry height="20" width="980" x="80" y="655" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-5" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fillColor=none;strokeColor=none;" value="• Если открыть страницу через file:// — у вкладки origin = &quot;null&quot;, и backend (с CORS под http://localhost:63342) такие запросы отвергает." vertex="1">
+          <mxGeometry height="20" width="980" x="80" y="675" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-6" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fillColor=none;strokeColor=none;" value="• Подключение к БД (PostgreSQL) держится внутри backend через connection-pool (HikariCP) и работает по сети только из backend, браузер с БД напрямую не общается." vertex="1">
+          <mxGeometry height="20" width="980" x="80" y="695" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-7" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fillColor=none;strokeColor=none;" value="• API_BASE в api.js указан абсолютным URL &quot;http://localhost:8080&quot; — это и делает запросы из браузера межсайтовыми (cross-origin)." vertex="1">
+          <mxGeometry height="20" width="980" x="80" y="715" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

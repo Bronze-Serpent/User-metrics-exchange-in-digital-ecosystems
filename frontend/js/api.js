@@ -10,8 +10,41 @@ var API_BASE = 'http://localhost:8080';
 var Api = (function () {
   'use strict';
 
+  /** Возвращает { Authorization: 'Basic ...' } если токен есть, иначе пустой объект. */
+  function authHeaders() {
+    var t = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
+    return t ? { 'Authorization': t } : {};
+  }
+
+  /**
+   * Если токена нет — показывает модалку логина и кидает ошибку,
+   * чтобы не лететь к backend и не получить лавину 401 при инициализации страницы.
+   */
+  function ensureAuth() {
+    if (typeof Auth !== 'undefined' && !Auth.isAuthenticated()) {
+      Auth.showLogin();
+      throw new Error('Требуется авторизация');
+    }
+  }
+
+  /** Сливает дополнительные заголовки с авторизацией. */
+  function withAuth(headers) {
+    var out = {};
+    if (headers) for (var k in headers) if (Object.prototype.hasOwnProperty.call(headers, k)) out[k] = headers[k];
+    var auth = authHeaders();
+    for (var ak in auth) if (Object.prototype.hasOwnProperty.call(auth, ak)) out[ak] = auth[ak];
+    return out;
+  }
+
   /** Бросает ошибку с телом ответа, если статус не ok. Иначе возвращает JSON. */
   async function handle(res) {
+    if (res.status === 401) {
+      if (typeof Auth !== 'undefined') {
+        Auth.showAuthError('Неверный логин или пароль.');
+        Auth.showLogin();
+      }
+      throw new Error('Требуется авторизация');
+    }
     if (!res.ok) {
       var text = await res.text().catch(function () { return 'Нет деталей'; });
       throw new Error('HTTP ' + res.status + ': ' + text);
@@ -26,6 +59,7 @@ var Api = (function () {
    *   → companyFilter.companyNameSubstring=foo
    */
   async function sendForm(method, url, data) {
+    ensureAuth();
     var params = new URLSearchParams();
 
     function flatten(obj, prefix) {
@@ -46,7 +80,7 @@ var Api = (function () {
 
     var res = await fetch(API_BASE + url, {
       method: method,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: withAuth({ 'Content-Type': 'application/x-www-form-urlencoded' }),
       body: params.toString()
     });
     return handle(res);
@@ -57,9 +91,10 @@ var Api = (function () {
 
   /** Отправляет запрос с телом application/json (по умолчанию POST). */
   async function sendJson(method, url, data) {
+    ensureAuth();
     var res = await fetch(API_BASE + url, {
       method: method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: withAuth({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(data)
     });
     return handle(res);
@@ -70,13 +105,15 @@ var Api = (function () {
 
   /** POST без тела (для эндпоинтов, читающих только path/query). */
   async function postEmpty(url) {
-    var res = await fetch(API_BASE + url, { method: 'POST' });
+    ensureAuth();
+    var res = await fetch(API_BASE + url, { method: 'POST', headers: withAuth() });
     return handle(res);
   }
 
   /** Отправляет GET-запрос и возвращает JSON. */
   async function get(url) {
-    var res = await fetch(API_BASE + url);
+    ensureAuth();
+    var res = await fetch(API_BASE + url, { headers: withAuth() });
     return handle(res);
   }
 
@@ -100,7 +137,15 @@ var Api = (function () {
 
   /** Отправляет DELETE-запрос. Тело ответа не парсится (эндпоинты возвращают 204). */
   async function del(url) {
-    var res = await fetch(API_BASE + url, { method: 'DELETE' });
+    ensureAuth();
+    var res = await fetch(API_BASE + url, { method: 'DELETE', headers: withAuth() });
+    if (res.status === 401) {
+      if (typeof Auth !== 'undefined') {
+        Auth.showAuthError('Неверный логин или пароль.');
+        Auth.showLogin();
+      }
+      throw new Error('Требуется авторизация');
+    }
     if (!res.ok) {
       var text = await res.text().catch(function () { return 'Нет деталей'; });
       throw new Error('HTTP ' + res.status + ': ' + text);
