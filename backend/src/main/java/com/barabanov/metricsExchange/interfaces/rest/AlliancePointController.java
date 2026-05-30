@@ -4,7 +4,7 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointCreateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointUpdateDto;
 import com.barabanov.metricsExchange.service.AlliancePointService;
-import com.barabanov.metricsExchange.service.UserMetricsDto;
+import com.barabanov.metricsExchange.interfaces.rest.dto.UserMetricsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

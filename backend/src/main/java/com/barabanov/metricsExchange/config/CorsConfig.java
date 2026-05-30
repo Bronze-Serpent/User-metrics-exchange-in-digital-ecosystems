@@ -1,15 +1,14 @@
 package com.barabanov.metricsExchange.config;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 
 @Configuration
 public class CorsConfig {
 
 
+    // Перестаёт работать после подключения spring-security т.к. там CSRF Это фильтр в другом другом объекте, полагаю
+/*
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
@@ -23,5 +22,5 @@ public class CorsConfig {
                         .allowedHeaders("*");
             }
         };
-    }
+    }*/
 }

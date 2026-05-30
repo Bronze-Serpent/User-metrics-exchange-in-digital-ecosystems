@@ -1,4 +1,4 @@
-package com.barabanov.metricsExchange.service;
+package com.barabanov.metricsExchange.interfaces.rest.dto;
 
 import lombok.AccessLevel;
 import lombok.Builder;

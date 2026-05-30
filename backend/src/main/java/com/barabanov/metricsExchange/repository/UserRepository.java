@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.Optional;
+
 
 public interface UserRepository extends QuerydslPredicateExecutor<UserEntity>, CrudRepository<UserEntity, Long> {
 
@@ -18,4 +20,7 @@ public interface UserRepository extends QuerydslPredicateExecutor<UserEntity>, C
             """
     )
     void removeAllWith(Long companyId);
+
+
+    Optional<UserEntity> findByEmail(String email);
 }

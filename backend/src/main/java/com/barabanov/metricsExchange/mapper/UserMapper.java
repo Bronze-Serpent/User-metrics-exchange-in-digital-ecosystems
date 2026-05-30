@@ -5,6 +5,9 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.CreateUserDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.UserDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.springframework.security.core.userdetails.User;
+
+import java.util.Collections;
 
 import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 
@@ -16,4 +19,12 @@ public interface UserMapper {
 
     @Mapping(target = "linkedCompanyId", source = "source.linkedCompany.id")
     UserDto toUserDto(UserEntity source);
+
+
+    default User toSpringSecUser(UserEntity source) {
+        if (source == null)
+            return null;
+
+        return new User(source.getEmail(), source.getPasswordHash(), Collections.singleton(source.getRole()));
+    }
 }

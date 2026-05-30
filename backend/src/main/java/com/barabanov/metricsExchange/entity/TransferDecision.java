@@ -1,5 +1,6 @@
 package com.barabanov.metricsExchange.entity;
 
 public enum TransferDecision {
-    ACCEPT, REJECT
+    ACCEPT,
+    REJECT
 }

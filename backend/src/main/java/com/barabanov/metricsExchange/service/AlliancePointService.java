@@ -8,6 +8,7 @@ import com.barabanov.metricsExchange.external.UserMetricsWebClient;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointCreateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointUpdateDto;
+import com.barabanov.metricsExchange.interfaces.rest.dto.UserMetricsDto;
 import com.barabanov.metricsExchange.mapper.AlliancePointMapper;
 import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
 import com.barabanov.metricsExchange.repository.AlliancePointRepository;
