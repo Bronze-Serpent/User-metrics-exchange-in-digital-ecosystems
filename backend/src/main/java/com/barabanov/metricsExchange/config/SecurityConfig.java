@@ -38,8 +38,7 @@ public class SecurityConfig {
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(urlAuthConfig -> urlAuthConfig
-//TODO: сделать авторизацию. Учесть ** - не будут ли они перехватывать то что не нужно
-//                                .requestMatchers("**/user/register-client", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                                .requestMatchers("**/user/register-client", "**/companies", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
 //                                .requestMatchers("**/user/create").hasAnyAuthority(SUPER_USER.getAuthority(), COMPANY_AGENT.getAuthority())
 //                                .requestMatchers(DELETE, "**/user/**").hasAnyAuthority(SUPER_USER.getAuthority(), COMPANY_AGENT.getAuthority())
 //                                .requestMatchers("**/users").hasAnyAuthority(SUPER_USER.getAuthority(), COMPANY_AGENT.getAuthority())
@@ -56,7 +55,7 @@ public class SecurityConfig {
                                 .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginPage("http://localhost:63342/frontend/login")
+                        .loginPage("http://localhost:63342/frontend/index.html")
                         .loginProcessingUrl("/user-exchange-metrics/login")
                         // Чтобы не было редиректа, а просто отправились 200 и 400 статусы
                         .successHandler((request, response, authentication) -> response.setStatus(HttpStatus.OK.value()))
@@ -64,7 +63,7 @@ public class SecurityConfig {
                 )
                 .logout(logoutConfig -> logoutConfig
                         .logoutUrl("/user-exchange-metrics/logout")
-                        .logoutSuccessUrl("http://localhost:63342/frontend/login"));
+                        .logoutSuccessUrl("http://localhost:63342/frontend/index.html"));
 
         return http.build();
     }

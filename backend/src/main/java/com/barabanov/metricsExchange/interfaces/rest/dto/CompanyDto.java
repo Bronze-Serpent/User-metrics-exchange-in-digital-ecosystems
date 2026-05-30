@@ -14,4 +14,6 @@ public class CompanyDto {
     String name;
     String description;
     Boolean suppUserProfileExchange;
+    String userProfileImportTopicName;
+    String triggerUrlForExportUserPortfolio;
 }

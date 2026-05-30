@@ -76,7 +76,7 @@ public class UserService implements UserDetailsService {
         creatingUser.setPasswordHash(Optional.ofNullable(createUserDto.getPassword())
                 .filter(StringUtils::hasText)
                 .map(passwordEncoder::encode)
-                .orElseThrow(() -> new IllegalArgumentException("Пароль не может быть пустым при создании пользователя"))); //TODO: сделать отдельный рест на изменение пароля у пользователя (админам приложения доступен + самим пользователям)
+                .orElseThrow(() -> new IllegalArgumentException("Пароль не может быть пустым при создании пользователя")));
 
         return userMapper.toUserDto(userRepository.save(creatingUser));
     }

@@ -103,11 +103,11 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="filterToCompanyId">ID компании-назначения</label>
-          <input type="number" id="filterToCompanyId" class="form-control" placeholder="toCompanyId" />
+          <input type="number" id="filterToCompanyId" class="form-control" />
         </div>
         <div class="form-group">
           <label class="form-label" for="filterFromProfileId">ID профиля пользователя</label>
-          <input type="text" id="filterFromProfileId" class="form-control" placeholder="fromProfileId" />
+          <input type="text" id="filterFromProfileId" class="form-control" />
         </div>
       </div>
       <div class="form-actions">
@@ -160,8 +160,8 @@
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
 <script>
-  /* COMPANY_ID — пока зашит явно (после авторизации подставится id компании пользователя) */
-  var COMPANY_ID = 1;
+  /* Фильтр по компании администратора в запросах НЕ передаём — backend
+     достаёт его из сессии пользователя. */
 
   var state = {
     page: 0, totalPages: 0, totalElements: 0, pageSize: 10,
@@ -326,7 +326,8 @@
     state.page = page;
     document.getElementById('requestsContent').innerHTML = '<div class="loading">Загрузка...</div>';
     document.getElementById('requestsPagination').innerHTML = '';
-    var transferFilter = { fromCompanyId: COMPANY_ID };
+    /* fromCompanyId backend подставит сам из сессии — не отправляем */
+    var transferFilter = {};
     if (state.statuses.length)  transferFilter.statuses     = state.statuses;
     if (state.decisions.length) transferFilter.decisions    = state.decisions;
     if (state.fId)              transferFilter.id            = Number(state.fId);

@@ -10,7 +10,7 @@
 var Api = (function () {
   'use strict';
 
-  /** На 401 — сброс профиля и переход на login.html. */
+  /** На 401 — сброс профиля и переход на index.html?login=1. */
   function handleUnauthorized() {
     if (typeof Auth !== 'undefined') {
       Auth.clearUser();
@@ -161,11 +161,12 @@ var Api = (function () {
     },
 
     /**
-     * Регистрация пользователя (создание + сразу логин обычно).
-     * @param {object} payload - { email, password, role, linkedCompanyId? }
+     * Публичная регистрация клиента.
+     * Эндпоинт сам выставляет роль CLIENT — указывать её в payload не нужно.
+     * @param {object} payload - { email, password }
      */
     register: function (payload) {
-      return postJson('/user-exchange-metrics/user/create', payload);
+      return postJson('/user-exchange-metrics/user/register-client', payload);
     },
 
     /* ========================================================
@@ -192,6 +193,24 @@ var Api = (function () {
 
     createCompany: function (payload) {
       return postJson('/user-exchange-metrics/company/create', payload);
+    },
+
+    /**
+     * Получить подробную информацию о компании.
+     * @param {number|string} companyId
+     */
+    getCompany: function (companyId) {
+      return get('/user-exchange-metrics/company/' + companyId);
+    },
+
+    /**
+     * Обновить данные компании.
+     * @param {number|string} companyId
+     * @param {object} payload - поля для обновления (например: name, description,
+     *   suppUserProfileExchange и т.п. — зависит от UpdateCompanyDto на backend).
+     */
+    updateCompany: function (companyId, payload) {
+      return putJson('/user-exchange-metrics/company/' + companyId, payload);
     },
 
     deleteCompany: function (companyId) {
@@ -259,12 +278,17 @@ var Api = (function () {
 
     getCompanyPoints: function (opts) {
       opts = opts || {};
-      return postJson('/user-exchange-metrics/company-points', {
+      var data = {
         pageNumber: opts.pageNumber !== undefined ? opts.pageNumber : 0,
         pageSize:   opts.pageSize   !== undefined ? opts.pageSize   : 10,
-        sortOrder:  opts.sortOrder || 'ASC',
-        companyPointFilter: { companyId: opts.companyId }
-      });
+        sortOrder:  opts.sortOrder || 'ASC'
+      };
+      /* companyId передаётся только если явно задан — иначе backend подставит
+         id компании пользователя из сессии. */
+      if (opts.companyId !== undefined && opts.companyId !== null && opts.companyId !== '') {
+        data.companyPointFilter = { companyId: opts.companyId };
+      }
+      return postJson('/user-exchange-metrics/company-points', data);
     },
 
     getCompanyPoint: function (id) {

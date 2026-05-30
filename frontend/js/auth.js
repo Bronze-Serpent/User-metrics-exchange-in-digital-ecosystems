@@ -7,15 +7,9 @@
    - Профиль пользователя (из /me) хранится в sessionStorage
      для отображения роли/email и контроля доступа на UI.
 
-   Поведение модуля:
-   - На каждой странице на DOMContentLoaded:
-     * Если страница публичная (index.html, login.html) — просто
-       рендерим UI (кнопка "Вход" или блок с пользователем).
-     * Если страница приватная и пользователя нет → редирект
-       на login.html?next=<текущий путь>.
-     * Если пользователь есть, но его роль не разрешена для
-       текущей страницы (вариант B) → редирект на роль-домашнюю.
-     * Иначе — рендерим UI.
+   Формы входа и регистрации живут на index.html как отдельная
+   вкладка "Вход". При попытке открыть приватную страницу без
+   авторизации редиректит на index.html?login=1&next=<откуда>.
 
    Подключение на странице:
      <script src="../js/auth.js"></script>   ← ДО api.js
@@ -84,9 +78,13 @@ var Auth = (function () {
   function urlForRootFile(file) {
     return isPagesContext() ? ('../' + file) : file;
   }
+  function indexUrl() { return urlForRootFile('index.html'); }
 
-  function loginUrl()  { return urlForRootFile('login.html'); }
-  function indexUrl()  { return urlForRootFile('index.html'); }
+  /** URL для редиректа на форму входа: index.html?login=1&next=<откуда> */
+  function loginUrlWithNext() {
+    var next = encodeURIComponent(window.location.pathname + window.location.search);
+    return urlForRootFile('index.html') + '?login=1&next=' + next;
+  }
 
   function homeForUser(user) {
     var role = user && user.role;
@@ -94,23 +92,21 @@ var Auth = (function () {
     return page ? urlForPagesFile(page) : indexUrl();
   }
 
-  /* Публичные страницы (доступны всем без ограничений). */
+  /** Публичная страница — на ней не требуется авторизация. */
   function isPublicPage(page) {
-    return page === 'index.html' || page === 'login.html';
+    return page === 'index.html';
   }
 
-  /* Разрешена ли страница для роли пользователя. */
+  /** Разрешена ли страница для роли пользователя. */
   function isAllowed(page, user) {
     var allowed = PAGE_ROLES[page];
-    if (!allowed) return true;                 // нет ограничений
+    if (!allowed) return true;
     return !!(user && allowed.indexOf(user.role) !== -1);
   }
 
   /* ---- Редиректы ---- */
   function redirectToLogin() {
-    /* Сохраняем pathname + search, чтобы вернуться на конкретный URL (например, alliance.html?id=5) */
-    var next = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = loginUrl() + '?next=' + next;
+    window.location.href = loginUrlWithNext();
   }
 
   function logout() {
@@ -131,31 +127,30 @@ var Auth = (function () {
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  /* ---- Инжект блока пользователя/входа в top-nav ---- */
+  /* ---- Инжект блока пользователя в top-nav ---- */
   function injectTopNavUI() {
     var topNav = document.querySelector('.top-nav');
     if (!topNav) return;
 
-    /* Удалим прежний инжект, если был — для идемпотентности */
-    var prev = topNav.querySelectorAll('[data-auth-injected]');
-    prev.forEach(function (el) { el.remove(); });
+    /* Удалим прежний инжект */
+    topNav.querySelectorAll('[data-auth-injected]').forEach(function (el) { el.remove(); });
 
     var user = getUser();
-    if (!user) {
-      /* Кнопка "Войти" */
-      var loginLink = document.createElement('a');
-      loginLink.href = loginUrl();
-      loginLink.className = 'top-nav-home';
-      loginLink.textContent = 'Войти';
-      loginLink.setAttribute('data-auth-injected', '');
-      topNav.appendChild(loginLink);
-      return;
-    }
+
+    /* Прячем/показываем вкладку "Вход" (на index.html) */
+    var loginTab = topNav.querySelector('.top-nav-btn[data-tab="login"]');
+    if (loginTab) loginTab.style.display = user ? 'none' : '';
+
+    if (!user) return;   /* гость — ничего не дописываем */
+
+    /* Если на странице нет статической "На главную" (например, index.html) —
+       первому инжектируемому блоку даём margin-left: auto, чтобы прижать группу вправо. */
+    var hasHomeLink = !!topNav.querySelector('a.top-nav-home');
 
     /* Email + роль */
     var info = document.createElement('span');
-    info.className = 'top-nav-home';
-    info.style.cssText = 'color:var(--text);font-size:0.8rem;padding:4px 8px;cursor:default;';
+    info.className = 'top-nav-userinfo';
+    if (!hasHomeLink) info.style.marginLeft = 'auto';
     info.setAttribute('data-auth-injected', '');
     var roleLabel = ROLE_LABELS[user.role] || user.role;
     info.innerHTML = '<strong>' + escHtml(user.email) + '</strong> ' +
@@ -165,10 +160,9 @@ var Auth = (function () {
     /* Кнопка "Выйти" */
     var logoutBtn = document.createElement('button');
     logoutBtn.type = 'button';
-    logoutBtn.className = 'top-nav-home';
-    logoutBtn.style.cssText = 'background:none;border:none;cursor:pointer;font:inherit;';
-    logoutBtn.textContent = 'Выйти';
+    logoutBtn.className = 'top-nav-logout';
     logoutBtn.setAttribute('data-auth-injected', '');
+    logoutBtn.textContent = 'Выйти';
     logoutBtn.addEventListener('click', logout);
     topNav.appendChild(logoutBtn);
   }
@@ -179,8 +173,7 @@ var Auth = (function () {
     var user = getUser();
 
     if (isPublicPage(page)) {
-      /* На login.html отдельный UI у формы — top-nav не дополняем */
-      if (page !== 'login.html') injectTopNavUI();
+      injectTopNavUI();
       return;
     }
 
@@ -203,12 +196,12 @@ var Auth = (function () {
     setUser:         setUser,
     clearUser:       clearUser,
     isAuthenticated: function () { return !!getUser(); },
-    loginUrl:        loginUrl,
     indexUrl:        indexUrl,
     homeForUser:     homeForUser,
     isAllowed:       isAllowed,
     redirectToLogin: redirectToLogin,
     logout:          logout,
+    injectTopNavUI:  injectTopNavUI,
     ROLE_HOMES:      ROLE_HOMES,
     ROLE_LABELS:     ROLE_LABELS,
     PAGE_ROLES:      PAGE_ROLES

@@ -11,6 +11,7 @@
 <nav class="top-nav">
   <button class="top-nav-btn" data-tab="about">О нас</button>
   <button class="top-nav-btn" data-tab="companies">Компании</button>
+  <button class="top-nav-btn" data-tab="company-info">О компании</button>
   <button class="top-nav-btn active" data-tab="management">Управление компанией</button>
   <button class="top-nav-btn" data-tab="admins">Администраторы компании</button>
   <a href="../index.html" class="top-nav-home">На главную</a>
@@ -57,6 +58,16 @@
       </div>
       <div id="companiesContent"><div class="loading">Загрузка...</div></div>
       <div class="pagination" id="companiesPagination"></div>
+    </div>
+  </div>
+
+  <!-- О компании: данные текущей компании представителя + редактирование -->
+  <div class="tab-panel" id="tab-company-info">
+    <div class="card">
+      <h2 class="card-title">Информация о компании</h2>
+      <div id="companyInfoContent">
+        <div class="loading">Загрузка...</div>
+      </div>
     </div>
   </div>
 
@@ -145,6 +156,18 @@
         <span class="toolbar-spacer"></span>
         <span id="adminsCountInfo" class="page-info"></span>
       </div>
+
+      <!-- Сортировки (мульти, в порядке приоритета) -->
+      <div style="margin: 8px 0 4px;">
+        <label class="form-label">Сортировка (применяется в порядке сверху вниз):</label>
+        <div id="adminsSortRows"></div>
+        <button id="adminsAddSortBtn" type="button" class="btn btn-secondary btn-sm">+ Добавить сортировку</button>
+      </div>
+      <div class="toolbar">
+        <button id="adminsApplySortBtn" class="btn btn-primary btn-sm">Применить сортировки</button>
+        <button id="adminsResetSortBtn" class="btn btn-secondary btn-sm">Сбросить сортировки</button>
+      </div>
+
       <div id="adminsContent"><div class="loading">Загрузка администраторов...</div></div>
       <div class="pagination" id="adminsPagination"></div>
     </div>
@@ -207,12 +230,14 @@
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
 <script>
-  var COMPANY_ID = 1;
+  /* id компании представителя берётся из профиля (поле linkedCompanyId из /me) */
+  var COMPANY_ID = (Auth.getUser() || {}).linkedCompanyId;
 
   var state = {
     pointsPage: 0, pointsTotalPages: 0, pointsTotalElements: 0, pointsPageSize: 10,
     adminsPage: 0, adminsTotalPages: 0, adminsTotalElements: 0, adminsPageSize: 10,
     adminsIdFilter: '', adminsEmailFilter: '',
+    adminsSortSpecifiers: [],
     currentAdmins: [], adminToDelete: null
   };
   var companiesState = { page: 0, totalPages: 0, totalElements: 0, pageSize: 10, nameFilter: '', idFilter: '' };
@@ -338,7 +363,8 @@
     showAlert('createPointAlert', '', 'success');
     if (!url) { showAlert('createPointAlert', 'Укажите URL точки.', 'error'); return; }
     btn.disabled = true; btn.textContent = 'Создание...';
-    Api.createCompanyPoint({ url: url, format: format, companyId: COMPANY_ID })
+    /* companyId не передаём — backend подставит из сессии */
+    Api.createCompanyPoint({ url: url, format: format })
       .then(function (result) {
         showAlert('createPointAlert', '✓ Точка <strong>#' + esc(result.id) + '</strong> создана!', 'success');
         document.getElementById('createPointForm').reset();
@@ -354,7 +380,8 @@
     state.pointsPage = page;
     document.getElementById('pointsContent').innerHTML = '<div class="loading">Загрузка...</div>';
     document.getElementById('pointsPagination').innerHTML = '';
-    Api.getCompanyPoints({ pageNumber: page, pageSize: state.pointsPageSize, companyId: COMPANY_ID })
+    /* companyId не передаём — backend подставит из сессии */
+    Api.getCompanyPoints({ pageNumber: page, pageSize: state.pointsPageSize })
       .then(function (response) {
         var points = (response && response.data) ? response.data : [];
         state.pointsTotalPages    = response.totalPages    || 0;
@@ -437,15 +464,59 @@
   }
 
   /* ===== Администраторы компании ===== */
+
+  /* Поля сортировки пользователей (UserSortField) */
+  var USER_SORT_FIELDS = [
+    ['CREATED_AT', 'Дата создания'],
+    ['EMAIL',      'Email'],
+    ['ROLE',       'Роль']
+  ];
+
+  function addAdminSortRow(field, order) {
+    var fieldOptions = USER_SORT_FIELDS.map(function (f) {
+      var sel = (f[0] === field) ? ' selected' : '';
+      return '<option value="' + f[0] + '"' + sel + '>' + f[1] + '</option>';
+    }).join('');
+    var row = document.createElement('div');
+    row.className = 'toolbar sort-row';
+    row.style.marginBottom = '8px';
+    row.innerHTML =
+      '<select class="sort-field form-control" style="width:auto;">' + fieldOptions + '</select>' +
+      '<select class="sort-order form-control" style="width:auto;">' +
+        '<option value="ASC"'  + (order === 'DESC' ? '' : ' selected') + '>По возрастанию</option>' +
+        '<option value="DESC"' + (order === 'DESC' ? ' selected' : '') + '>По убыванию</option>' +
+      '</select>' +
+      '<button type="button" class="btn-trash" title="Удалить сортировку">🗑</button>';
+    row.querySelector('.btn-trash').addEventListener('click', function () { row.parentNode.removeChild(row); });
+    document.getElementById('adminsSortRows').appendChild(row);
+  }
+
+  function collectAdminsSortSpecifiers() {
+    var specs = [];
+    document.querySelectorAll('#adminsSortRows .sort-row').forEach(function (row) {
+      var field = row.querySelector('.sort-field').value;
+      var order = row.querySelector('.sort-order').value;
+      if (field) specs.push({ sortBy: field, sortOrder: order });
+    });
+    return specs;
+  }
+
   function loadAdmins(page) {
     if (page === undefined) page = 0;
     state.adminsPage = page;
     document.getElementById('adminsContent').innerHTML = '<div class="loading">Загрузка...</div>';
     document.getElementById('adminsPagination').innerHTML = '';
-    var userFilter = { linkedCompanyId: COMPANY_ID, userRole: 'COMPANY_ADMIN' };
+    /* linkedCompanyId не передаём — backend подставит из сессии.
+       Остаётся userRole=COMPANY_ADMIN, чтобы получить именно администраторов. */
+    var userFilter = { userRole: 'COMPANY_ADMIN' };
     if (state.adminsIdFilter)    userFilter.userId = Number(state.adminsIdFilter);
     if (state.adminsEmailFilter) userFilter.userEmailSubstr = state.adminsEmailFilter;
-    Api.getUsers({ pageNumber: page, pageSize: state.adminsPageSize, userFilter: userFilter })
+    Api.getUsers({
+      pageNumber:     page,
+      pageSize:       state.adminsPageSize,
+      userFilter:     userFilter,
+      sortSpecifiers: state.adminsSortSpecifiers
+    })
       .then(function (response) {
         var admins = (response && response.data) ? response.data : [];
         state.currentAdmins       = admins;
@@ -488,6 +559,20 @@
     loadAdmins(0);
   });
 
+  /* Сортировки администраторов */
+  document.getElementById('adminsAddSortBtn').addEventListener('click', function () {
+    addAdminSortRow('CREATED_AT', 'DESC');
+  });
+  document.getElementById('adminsApplySortBtn').addEventListener('click', function () {
+    state.adminsSortSpecifiers = collectAdminsSortSpecifiers();
+    loadAdmins(0);
+  });
+  document.getElementById('adminsResetSortBtn').addEventListener('click', function () {
+    document.getElementById('adminsSortRows').innerHTML = '';
+    state.adminsSortSpecifiers = [];
+    loadAdmins(0);
+  });
+
   function confirmDeleteAdmin(id) {
     var admin = state.currentAdmins.filter(function (u) { return u.id === id; })[0];
     state.adminToDelete = id;
@@ -517,7 +602,8 @@
     if (!email)    { showAlert('createAdminAlert', 'Укажите email.', 'error'); return; }
     if (!password) { showAlert('createAdminAlert', 'Укажите пароль.', 'error'); return; }
     btn.disabled = true; btn.textContent = 'Создание...';
-    Api.createUser({ email: email, password: password, role: 'COMPANY_ADMIN', linkedCompanyId: COMPANY_ID })
+    /* linkedCompanyId не передаём — backend подставит из сессии создателя */
+    Api.createUser({ email: email, password: password, role: 'COMPANY_ADMIN' })
       .then(function (result) {
         showAlert('createAdminAlert', '✓ Администратор <strong>#' + esc(result.id) + '</strong> (' + esc(result.email) + ') создан!', 'success');
         document.getElementById('createAdminForm').reset();
@@ -542,6 +628,71 @@
     }
   });
 
+  /* ===== О компании (просмотр + редактирование) ===== */
+  function loadCompanyInfo() {
+    var container = document.getElementById('companyInfoContent');
+    container.innerHTML = '<div class="loading">Загрузка...</div>';
+    Api.getCompany(COMPANY_ID)
+      .then(function (c) {
+        container.innerHTML =
+          '<form id="companyEditForm" novalidate>' +
+            '<div class="form-grid">' +
+              '<div class="form-group">' +
+                '<label class="form-label">ID</label>' +
+                '<input type="text" class="form-control" value="' + esc(c.id) + '" disabled />' +
+              '</div>' +
+              '<div class="form-group">' +
+                '<label class="form-label" for="companyEditName">Название *</label>' +
+                '<input type="text" id="companyEditName" class="form-control" value="' + esc(c.name || '') + '" required />' +
+              '</div>' +
+              '<div class="form-group full-width">' +
+                '<label class="form-label" for="companyEditDescription">Описание</label>' +
+                '<textarea id="companyEditDescription" class="form-control" rows="3">' + esc(c.description || '') + '</textarea>' +
+              '</div>' +
+              '<div class="form-group full-width">' +
+                '<label class="form-label" for="companyEditImportTopic">Топик импорта профилей</label>' +
+                '<input type="text" id="companyEditImportTopic" class="form-control" value="' + esc(c.userProfileImportTopicName || '') + '" />' +
+              '</div>' +
+              '<div class="form-group full-width">' +
+                '<label class="form-label" for="companyEditExportUrl">URL экспорта портфолио</label>' +
+                '<input type="text" id="companyEditExportUrl" class="form-control" value="' + esc(c.triggerUrlForExportUserPortfolio || '') + '" />' +
+              '</div>' +
+              '<div class="form-group full-width">' +
+                '<label class="cb-label">' +
+                  '<input type="checkbox" id="companyEditSuppExchange" ' + (c.suppUserProfileExchange ? 'checked' : '') + ' />' +
+                  ' Поддерживает перенос профилей пользователей' +
+                '</label>' +
+              '</div>' +
+            '</div>' +
+            '<div id="companyEditAlert"></div>' +
+            '<div class="form-actions">' +
+              '<button type="submit" id="companyEditSaveBtn" class="btn btn-primary">Сохранить</button>' +
+            '</div>' +
+          '</form>';
+
+        document.getElementById('companyEditForm').addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var btn = document.getElementById('companyEditSaveBtn');
+          var name = document.getElementById('companyEditName').value.trim();
+          if (!name) { showAlert('companyEditAlert', 'Укажите название.', 'error'); return; }
+          btn.disabled = true; btn.textContent = 'Сохранение...';
+          Api.updateCompany(COMPANY_ID, {
+            name:                             name,
+            description:                      document.getElementById('companyEditDescription').value.trim(),
+            suppUserProfileExchange:          document.getElementById('companyEditSuppExchange').checked,
+            userProfileImportTopicName:       document.getElementById('companyEditImportTopic').value.trim(),
+            triggerUrlForExportUserPortfolio: document.getElementById('companyEditExportUrl').value.trim()
+          })
+          .then(function () { showAlert('companyEditAlert', '✓ Изменения сохранены', 'success'); })
+          .catch(function (err) { showAlert('companyEditAlert', 'Ошибка: ' + esc(err.message), 'error'); })
+          .finally(function () { btn.disabled = false; btn.textContent = 'Сохранить'; });
+        });
+      })
+      .catch(function (err) {
+        container.innerHTML = '<div class="alert alert-error">Ошибка загрузки: ' + esc(err.message) + '</div>';
+      });
+  }
+
   /* ===== Tab switching (top-nav) ===== */
   document.querySelectorAll('.top-nav-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -550,9 +701,10 @@
       document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
       var panel = document.getElementById('tab-' + btn.dataset.tab);
       if (panel) panel.classList.add('active');
-      if (btn.dataset.tab === 'companies')  loadCompanies(0);
-      if (btn.dataset.tab === 'management') loadPoints(0);
-      if (btn.dataset.tab === 'admins')     loadAdmins(0);
+      if (btn.dataset.tab === 'companies')    loadCompanies(0);
+      if (btn.dataset.tab === 'company-info') loadCompanyInfo();
+      if (btn.dataset.tab === 'management')   loadPoints(0);
+      if (btn.dataset.tab === 'admins')       loadAdmins(0);
     });
   });
 

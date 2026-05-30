@@ -206,9 +206,30 @@ body {
   color: var(--text-muted);
   font-size: 0.8rem;
   text-decoration: none;
-  padding: 4px 8px;
+  padding: 6px 12px;
 }
 .top-nav-home:hover { color: var(--primary); }
+
+/* Логин + роль пользователя — увеличенный (двойной) отступ от "На главную" */
+.top-nav-userinfo {
+  margin-left: 20px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  cursor: default;
+}
+
+/* Кнопка "Выйти" — обычный отступ (как gap между tab-btn) */
+.top-nav-logout {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.top-nav-logout:hover { color: var(--primary); }
 
 /* Отступ от верхней панели до контента */
 .top-nav + main { padding-top: 32px; }

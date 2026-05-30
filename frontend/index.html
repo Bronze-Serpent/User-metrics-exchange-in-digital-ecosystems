@@ -10,18 +10,20 @@
 
 <nav class="top-nav">
   <button class="top-nav-btn active" data-tab="about">О нас</button>
-  <!-- "Войти" или email + "Выйти" будут добавлены автоматически в auth.js -->
+  <button class="top-nav-btn"        data-tab="companies">Компании</button>
+  <button class="top-nav-btn"        data-tab="login">Вход</button>
+  <!-- email + роль + "Выйти" дописываются автоматически из auth.js -->
 </nav>
 
 <main class="container">
+
+  <!-- О нас -->
   <div class="tab-panel active" id="tab-about">
     <div class="card about-page">
       <h2>О Metrics Exchange</h2>
       <p>Добро пожаловать в Metrics Exchange — место, где компании дружат рейтингами, как будто это коллекция марок.</p>
-
       <h3>Зачем это всё?</h3>
       <p>Чтобы пользователь мог переносить заработанную репутацию из одной компании в другую, не начиная каждый раз с нуля как новорождённый.</p>
-
       <h3>Что позволяет делать</h3>
       <ul>
         <li>Регистрировать компании и собирать их в альянсы.</li>
@@ -29,10 +31,8 @@
         <li>Подавать заявки на перенос профиля и выносить по ним решения.</li>
         <li>Управлять администраторами компании.</li>
       </ul>
-
       <h3>Сколько нам лет?</h3>
       <p>Целых 0 лет — гордый возраст бета-версии. Когда-нибудь нам стукнет один, обещаем устроить праздник.</p>
-
       <h3>Планы на будущее</h3>
       <ul>
         <li>Авторизация — чтобы перестать наконец прописывать <code>companyId = 1</code>.</li>
@@ -41,10 +41,259 @@
       </ul>
     </div>
   </div>
+
+  <!-- Компании (публично) -->
+  <div class="tab-panel" id="tab-companies">
+    <div class="card">
+      <h2 class="card-title">Компании, участвующие в системе</h2>
+      <div class="toolbar">
+        <input type="text" id="companyNameFilter" class="form-control"
+               placeholder="Поиск по названию..." style="max-width: 240px;" />
+        <input type="number" id="companyIdFilter" class="form-control"
+               placeholder="ID компании" style="max-width: 140px;" />
+        <button id="companiesSearchBtn" class="btn btn-primary btn-sm">Найти</button>
+        <button id="companiesResetBtn"  class="btn btn-secondary btn-sm">Сбросить</button>
+        <span class="toolbar-spacer"></span>
+        <span id="companiesCountInfo" class="page-info"></span>
+      </div>
+      <div id="companiesContent"><div class="loading">Загрузка...</div></div>
+      <div class="pagination" id="companiesPagination"></div>
+    </div>
+  </div>
+
+  <!-- Вход / Регистрация -->
+  <div class="tab-panel" id="tab-login">
+    <div class="card about-page" style="max-width: 440px;">
+      <h2 id="formTitle">Вход в Metrics Exchange</h2>
+
+      <form id="authForm" novalidate>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="loginUsername">Email</label>
+          <input type="email" id="loginUsername" name="username" class="form-control"
+                 autocomplete="username" required />
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="loginPassword">Пароль</label>
+          <input type="password" id="loginPassword" name="password" class="form-control"
+                 autocomplete="current-password" required />
+        </div>
+        <div class="form-group hidden" id="confirmPasswordGroup" style="margin-bottom: 14px;">
+          <label class="form-label" for="confirmPassword">Подтверждение пароля</label>
+          <input type="password" id="confirmPassword" class="form-control"
+                 autocomplete="new-password" />
+        </div>
+
+        <div id="authAlert"></div>
+
+        <div class="form-actions" style="margin-top: 18px;">
+          <button type="submit" id="submitBtn" class="btn btn-primary">Войти</button>
+          <button type="button" id="toggleBtn" class="btn btn-secondary">Зарегистрироваться</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </main>
 
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
+<script>
+  /* ===== Если уже залогинен — уводим на «домашнюю» страницу его роли ===== */
+  (function () {
+    var user = Auth.getUser();
+    if (user) {
+      var next = new URLSearchParams(location.search).get('next');
+      if (next) {
+        var nextPath = decodeURIComponent(next);
+        var qIdx     = nextPath.indexOf('?');
+        var pathOnly = (qIdx >= 0) ? nextPath.substring(0, qIdx) : nextPath;
+        var slash    = pathOnly.lastIndexOf('/');
+        var pageName = (slash >= 0) ? pathOnly.substring(slash + 1) : pathOnly;
+        if (Auth.isAllowed(pageName, user)) {
+          window.location.href = nextPath; return;
+        }
+      }
+      window.location.href = Auth.homeForUser(user);
+    }
+  })();
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function showAlert(containerId, msg, type) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = msg ? '<div class="alert alert-' + type + '" style="margin: 6px 0 14px;">' + msg + '</div>' : '';
+  }
+
+  /* ===== Переключение вкладок ===== */
+  function activateTab(id) {
+    document.querySelectorAll('.top-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+    var btn = document.querySelector('.top-nav-btn[data-tab="' + id + '"]');
+    if (btn) btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+    var panel = document.getElementById('tab-' + id);
+    if (panel) panel.classList.add('active');
+    if (id === 'companies') loadCompanies(0);
+  }
+  document.querySelectorAll('.top-nav-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { activateTab(btn.dataset.tab); });
+  });
+
+  /* Если ?login=1 — открыть вкладку "Вход" */
+  if (new URLSearchParams(location.search).get('login') === '1') {
+    activateTab('login');
+  }
+
+  /* ===== Компании (публично) ===== */
+  var companiesState = { page: 0, totalPages: 0, totalElements: 0, pageSize: 10, nameFilter: '', idFilter: '' };
+
+  function renderPagination(containerId, currentPage, totalPages, handlerName) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    var prevDisabled = currentPage === 0 ? 'disabled' : '';
+    var nextDisabled = currentPage >= totalPages - 1 ? 'disabled' : '';
+    el.innerHTML =
+      '<button class="btn btn-secondary btn-sm" ' + prevDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage - 1) + ')">← Назад</button>' +
+      '<span class="page-info">Страница ' + (currentPage + 1) + ' из ' + totalPages + '</span>' +
+      '<button class="btn btn-secondary btn-sm" ' + nextDisabled +
+        ' onclick="' + handlerName + '(' + (currentPage + 1) + ')">Вперёд →</button>';
+  }
+
+  function loadCompanies(page) {
+    if (page === undefined) page = 0;
+    companiesState.page = page;
+    document.getElementById('companiesContent').innerHTML = '<div class="loading">Загрузка...</div>';
+    document.getElementById('companiesPagination').innerHTML = '';
+    Api.getCompanies({
+      pageNumber: page, pageSize: companiesState.pageSize,
+      nameFilter: companiesState.nameFilter, companyId: companiesState.idFilter
+    })
+    .then(function (response) {
+      var companies = (response && response.data) ? response.data : [];
+      companiesState.totalPages    = response.totalPages    || 0;
+      companiesState.totalElements = response.totalElements || 0;
+      document.getElementById('companiesCountInfo').textContent = 'Найдено: ' + companiesState.totalElements;
+      if (companies.length === 0) {
+        document.getElementById('companiesContent').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">🏢</div><p>Компании не найдены</p></div>';
+        return;
+      }
+      var rows = companies.map(function (c) {
+        return '<tr><td style="width:80px;color:var(--text-muted)">' + esc(c.id) + '</td>' +
+          '<td><strong>' + esc(c.name || '—') + '</strong></td>' +
+          '<td>' + esc(c.description || '—') + '</td></tr>';
+      }).join('');
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="table-wrapper"><table>' +
+          '<thead><tr><th>ID</th><th>Название</th><th>Описание</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody></table></div>';
+      renderPagination('companiesPagination', companiesState.page, companiesState.totalPages, 'loadCompanies');
+    })
+    .catch(function (err) {
+      document.getElementById('companiesContent').innerHTML =
+        '<div class="alert alert-error">Ошибка загрузки: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  document.getElementById('companiesSearchBtn').addEventListener('click', function () {
+    companiesState.nameFilter = document.getElementById('companyNameFilter').value.trim();
+    companiesState.idFilter   = document.getElementById('companyIdFilter').value.trim();
+    loadCompanies(0);
+  });
+  document.getElementById('companiesResetBtn').addEventListener('click', function () {
+    document.getElementById('companyNameFilter').value = '';
+    document.getElementById('companyIdFilter').value   = '';
+    companiesState.nameFilter = ''; companiesState.idFilter = '';
+    loadCompanies(0);
+  });
+
+  /* ===== Форма входа / регистрации ===== */
+  var mode = 'login';   // 'login' | 'register'
+
+  function setMode(newMode) {
+    mode = newMode;
+    var submitBtn  = document.getElementById('submitBtn');
+    var toggleBtn  = document.getElementById('toggleBtn');
+    var confirmGr  = document.getElementById('confirmPasswordGroup');
+    var loginPass  = document.getElementById('loginPassword');
+    var title      = document.getElementById('formTitle');
+
+    if (mode === 'login') {
+      title.textContent       = 'Вход в Metrics Exchange';
+      submitBtn.textContent   = 'Войти';
+      toggleBtn.textContent   = 'Зарегистрироваться';
+      loginPass.autocomplete  = 'current-password';
+      confirmGr.classList.add('hidden');
+    } else {
+      title.textContent       = 'Регистрация в Metrics Exchange';
+      submitBtn.textContent   = 'Зарегистрироваться';
+      toggleBtn.textContent   = 'Войти';
+      loginPass.autocomplete  = 'new-password';
+      confirmGr.classList.remove('hidden');
+    }
+    showAlert('authAlert', '', 'success');
+  }
+
+  document.getElementById('toggleBtn').addEventListener('click', function () {
+    setMode(mode === 'login' ? 'register' : 'login');
+  });
+
+  document.getElementById('authForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var btn      = document.getElementById('submitBtn');
+    var username = document.getElementById('loginUsername').value.trim();
+    var password = document.getElementById('loginPassword').value;
+
+    showAlert('authAlert', '', 'success');
+    if (!username || !password) { showAlert('authAlert', 'Заполните все поля.', 'error'); return; }
+
+    if (mode === 'register') {
+      var confirm = document.getElementById('confirmPassword').value;
+      if (password !== confirm) { showAlert('authAlert', 'Пароли не совпадают.', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Создание...';
+      try {
+        await Api.register({ email: username, password: password });
+        showAlert('authAlert', 'Аккаунт создан, выполняется вход...', 'success');
+      } catch (err) {
+        btn.disabled = false; btn.textContent = 'Зарегистрироваться';
+        showAlert('authAlert', 'Ошибка регистрации: ' + esc(err.message), 'error');
+        return;
+      }
+    }
+
+    btn.disabled = true; btn.textContent = 'Вход...';
+    try {
+      await Api.login(username, password);
+      var user = await Api.getMe();
+      Auth.setUser(user);
+
+      /* Куда уводить (вариант B) */
+      var next = new URLSearchParams(location.search).get('next');
+      var target = null;
+      if (next) {
+        var nextPath = decodeURIComponent(next);
+        var qIdx     = nextPath.indexOf('?');
+        var pathOnly = (qIdx >= 0) ? nextPath.substring(0, qIdx) : nextPath;
+        var slash    = pathOnly.lastIndexOf('/');
+        var pageName = (slash >= 0) ? pathOnly.substring(slash + 1) : pathOnly;
+        if (Auth.isAllowed(pageName, user)) target = nextPath;
+      }
+      if (!target) target = Auth.homeForUser(user);
+      window.location.href = target;
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = (mode === 'register') ? 'Зарегистрироваться' : 'Войти';
+      showAlert('authAlert', 'Ошибка: ' + esc(err.message), 'error');
+    }
+  });
+
+  /* ===== Init ===== */
+  loadCompanies(0);   /* предзагрузка списка компаний */
+</script>
 
 </body>
 </html>
