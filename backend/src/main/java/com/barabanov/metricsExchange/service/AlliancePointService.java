@@ -10,7 +10,6 @@ import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.AlliancePointUpdateDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.UserMetricsDto;
 import com.barabanov.metricsExchange.mapper.AlliancePointMapper;
-import com.barabanov.metricsExchange.mapper.PredicateDataMapper;
 import com.barabanov.metricsExchange.repository.AlliancePointRepository;
 import com.barabanov.metricsExchange.repository.AllianceRepository;
 import com.barabanov.metricsExchange.repository.CompanyPointRepository;
@@ -43,7 +42,6 @@ public class AlliancePointService {
     private final Set<String> userMetricsRqPassedParameters;
     private final UserMetricsWebClient userMetricsWebClient;
     private final AlliancePointMapper alliancePointMapper;
-    private final PredicateDataMapper predicateDataMapper;
     private final AlliancePointRepository alliancePointRepository;
     private final AllianceRepository allianceRepository;
     private final TransactionTemplate transactionTemplate;

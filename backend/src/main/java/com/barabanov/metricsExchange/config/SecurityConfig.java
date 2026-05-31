@@ -38,7 +38,7 @@ public class SecurityConfig {
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(urlAuthConfig -> urlAuthConfig
-                                .requestMatchers("**/user/register-client", "**/companies", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                                .requestMatchers("/user-exchange-metrics/user/register-client", "/user-exchange-metrics/companies", "/v3/api-docs/**", "/swagger-ui/**", "/user-exchange-metrics/alliance-points/**").permitAll()
 //                                .requestMatchers("**/user/create").hasAnyAuthority(SUPER_USER.getAuthority(), COMPANY_AGENT.getAuthority())
 //                                .requestMatchers(DELETE, "**/user/**").hasAnyAuthority(SUPER_USER.getAuthority(), COMPANY_AGENT.getAuthority())
 //                                .requestMatchers("**/users").hasAnyAuthority(SUPER_USER.getAuthority(), COMPANY_AGENT.getAuthority())
