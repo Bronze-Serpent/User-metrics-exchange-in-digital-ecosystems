@@ -112,7 +112,7 @@ public class TransferRequestService {
                     .map(UserDetails::getUsername);
             CompanyEntity linkedCompanyEntity = userEmailOptional.flatMap(userRepository::findByEmail)
                     .map(UserEntity::getLinkedCompany)
-                    .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти связанную с email: %s",
+                    .orElseThrow(() -> new RuntimeException(String.format("Не удалось найти компанию связанную с email: %s",
                             userEmailOptional.orElse(null))));
             predicateBuilder.add(linkedCompanyEntity.getId(), transferRequestEntity.fromCompany.id::eq);
         }

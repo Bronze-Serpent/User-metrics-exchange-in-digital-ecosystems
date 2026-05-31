@@ -36,8 +36,8 @@ public class UserController {
     // Рест на создание аккаунта представителя компании в системе
     // Рест на создание администратора
     @PostMapping("/user/create")
-    public UserDto createUser(@RequestBody CreateUserDto createUserDto,
-                              @AuthenticationPrincipal UserDetails userDetails) {
+    public UserCreatedDto createUser(@RequestBody CreateUserDto createUserDto,
+                                     @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("Получен запрос на создание пользователя с email: {} от пользователя с email: {}",
                 createUserDto.getEmail(),
@@ -60,10 +60,11 @@ public class UserController {
     // Рест на просмотр всех администраторов компании с пагинацией
     // Рест на получение списка всех акков с ролью админа в приложении
     @PostMapping("/users")
-    public PageResponse<UserDto> getUsers(@RequestBody UserPageRequest userPageRequest) {
+    public PageResponse<UserDto> getUsers(@RequestBody UserPageRequest userPageRequest,
+                                          @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("Получен запрос на получение набора пользователей");
-        return userService.getUserPage(userPageRequest);
+        return userService.getUserPage(userPageRequest, userDetails);
     }
 
 }

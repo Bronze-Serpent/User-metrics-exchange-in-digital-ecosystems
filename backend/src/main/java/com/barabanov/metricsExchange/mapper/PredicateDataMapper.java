@@ -17,16 +17,15 @@ import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 public interface PredicateDataMapper {
 
 
-    default Predicate mapUserFilterToPredicate(UserFilter userFilter) {
+    default QPredicates mapUserFilterToPredicate(UserFilter userFilter) {
         if (userFilter == null)
-            return QPredicates.builder().build();
+            return QPredicates.builder();
 
         return QPredicates.builder()
                 .add(userFilter.getUserId(), userEntity.id::eq)
                 .add(userFilter.getUserEmailSubstr(), userEntity.email::contains)
                 .add(userFilter.getUserRole(), userEntity.role::in)
-                .add(userFilter.getLinkedCompanyId(), userEntity.linkedCompany.id::eq)
-                .build();
+                .add(userFilter.getLinkedCompanyId(), userEntity.linkedCompany.id::eq);
     }
 
 
@@ -42,14 +41,13 @@ public interface PredicateDataMapper {
     }
 
 
-    default Predicate mapCompanyPointFilterToPredicate(CompanyPointFilter companyPointFilter) {
+    default QPredicates mapCompanyPointFilterToPredicate(CompanyPointFilter companyPointFilter) {
         if (companyPointFilter == null)
-            return QPredicates.builder().build();
+            return QPredicates.builder();
 
         return QPredicates.builder()
                 .add(companyPointFilter.getCompanyId(), companyPointEntity.company.id::eq)
-                .add(companyPointFilter.getAlliancePointId(), companyPointEntity.alliancePoint.id::eq)
-                .build();
+                .add(companyPointFilter.getAlliancePointId(), companyPointEntity.alliancePoint.id::eq);
     }
 
 

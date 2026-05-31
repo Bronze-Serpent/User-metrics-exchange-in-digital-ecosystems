@@ -126,14 +126,12 @@
             <input type="email" id="agentEmail" class="form-control" required />
           </div>
           <div class="form-group">
-            <label class="form-label" for="agentPassword">Пароль *</label>
-            <input type="password" id="agentPassword" class="form-control" required />
-            <span class="hint">Будет использован backend позже</span>
-          </div>
-          <div class="form-group">
             <label class="form-label" for="agentCompanyId">ID компании (linkedCompanyId) *</label>
             <input type="number" id="agentCompanyId" class="form-control"
                    placeholder="ID из созданной выше компании" required />
+          </div>
+          <div class="form-group full-width">
+            <span class="hint">Пароль будет сгенерирован backend и показан после создания.</span>
           </div>
         </div>
         <div class="form-actions">
@@ -190,6 +188,20 @@
   </div>
 
 </main>
+
+<!-- Модалка с данными созданного пользователя (id + email + сгенерированный пароль) -->
+<div class="modal-overlay" id="createdUserModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Пользователь создан</h3>
+      <button class="modal-close" data-close="createdUserModal" aria-label="Закрыть">×</button>
+    </div>
+    <div id="createdUserContent"></div>
+    <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+      <button class="btn btn-primary" data-close="createdUserModal">Закрыть</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============================================================
      Scripts
@@ -329,22 +341,19 @@
     e.preventDefault();
     var btn       = document.getElementById('submitAgentBtn');
     var email     = document.getElementById('agentEmail').value.trim();
-    var password  = document.getElementById('agentPassword').value;
     var companyId = document.getElementById('agentCompanyId').value.trim();
     showAlert('createAgentAlert', '', 'success');
     if (!email)     { showAlert('createAgentAlert', 'Укажите email.', 'error'); return; }
-    if (!password)  { showAlert('createAgentAlert', 'Укажите пароль.', 'error'); return; }
     if (!companyId) { showAlert('createAgentAlert', 'Укажите ID компании.', 'error'); return; }
     btn.disabled = true; btn.textContent = 'Создание...';
+    /* password не передаём — backend сгенерирует пароль и вернёт его в ответе */
     Api.createUser({
       email:           email,
-      password:        password,
       role:            'COMPANY_AGENT',
       linkedCompanyId: Number(companyId)
     })
     .then(function (user) {
-      showAlert('createAgentAlert',
-        '✓ Представитель <strong>#' + esc(user.id) + '</strong> (' + esc(user.email) + ') создан!', 'success');
+      showCreatedUserModal(user);
       document.getElementById('createAgentForm').reset();
     })
     .catch(function (err) {
@@ -352,6 +361,37 @@
     })
     .finally(function () { btn.disabled = false; btn.textContent = 'Создать представителя'; });
   });
+
+  /** Показывает модалку с данными созданного пользователя (id + email + linkedCompanyId + пароль). */
+  function showCreatedUserModal(user) {
+    document.getElementById('createdUserContent').innerHTML =
+      '<div class="alert alert-success" style="margin-bottom: 16px;">' +
+        '✓ Пользователь успешно создан в компании.' +
+      '</div>' +
+      '<div class="detail-grid">' +
+        '<div class="detail-item">' +
+          '<div class="detail-label">ID пользователя</div>' +
+          '<div class="detail-value"><strong>#' + esc(user.id) + '</strong></div>' +
+        '</div>' +
+        '<div class="detail-item">' +
+          '<div class="detail-label">ID компании</div>' +
+          '<div class="detail-value">' + (user.linkedCompanyId ? '<strong>#' + esc(user.linkedCompanyId) + '</strong>' : '—') + '</div>' +
+        '</div>' +
+        '<div class="detail-item span-2">' +
+          '<div class="detail-label">Email</div>' +
+          '<div class="detail-value">' + esc(user.email || '—') + '</div>' +
+        '</div>' +
+        '<div class="detail-item span-2">' +
+          '<div class="detail-label">Пароль</div>' +
+          '<div class="detail-value"><code style="font-size:1rem;background:#f1f5f9;padding:4px 8px;border-radius:4px;">' +
+            esc(user.password || '—') + '</code></div>' +
+        '</div>' +
+      '</div>' +
+      '<p class="hint" style="margin-top:14px;">' +
+        'Сохраните пароль — повторно его получить нельзя.' +
+      '</p>';
+    document.getElementById('createdUserModal').classList.add('open');
+  }
 
   /* ============================================================
      Альянсы
@@ -454,6 +494,24 @@
       if (btn.dataset.tab === 'companies') loadCompanies(0);
       if (btn.dataset.tab === 'alliances') loadAlliances(0);
     });
+  });
+
+  /* ===== Закрытие модалок (× / кнопка / overlay / Escape) ===== */
+  document.querySelectorAll('[data-close]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var m = document.getElementById(el.dataset.close);
+      if (m) m.classList.remove('open');
+    });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(function (m) { m.classList.remove('open'); });
+    }
   });
 </script>
 

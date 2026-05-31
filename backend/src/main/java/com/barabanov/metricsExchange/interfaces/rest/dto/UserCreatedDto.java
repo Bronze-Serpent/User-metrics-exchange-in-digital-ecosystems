@@ -6,13 +6,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
+import java.time.OffsetDateTime;
 
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class CreateUserDto {
+public class UserCreatedDto {
 
+    Long id;
     String email;
+    String password;
     UserRole role;
     Long linkedCompanyId;
+    OffsetDateTime createdAt;
 }

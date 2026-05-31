@@ -13,5 +13,4 @@ public class CreateCompanyPointDto {
 
     String url;
     String format;
-    Long companyId;
 }

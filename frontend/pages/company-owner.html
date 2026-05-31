@@ -130,14 +130,10 @@
       <h2 class="card-title">Создание администратора компании</h2>
       <form id="createAdminForm" novalidate style="margin-top: 18px;">
         <div class="form-grid">
-          <div class="form-group">
+          <div class="form-group full-width">
             <label class="form-label" for="adminEmail">Email *</label>
             <input type="email" id="adminEmail" class="form-control" placeholder="admin@company.com" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="adminPassword">Пароль *</label>
-            <input type="password" id="adminPassword" class="form-control" placeholder="Пароль администратора" required />
-            <span class="hint">Будет использован backend позже</span>
+            <span class="hint">Пароль будет сгенерирован backend и показан после создания.</span>
           </div>
         </div>
         <div class="form-actions">
@@ -224,6 +220,20 @@
       <button class="modal-close" data-close="pointDetailModal" aria-label="Закрыть">×</button>
     </div>
     <div id="pointModalContent"><div class="loading">Загрузка...</div></div>
+  </div>
+</div>
+
+<!-- Модалка с данными созданного администратора (id + email + сгенерированный пароль) -->
+<div class="modal-overlay" id="createdUserModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Пользователь создан</h3>
+      <button class="modal-close" data-close="createdUserModal" aria-label="Закрыть">×</button>
+    </div>
+    <div id="createdUserContent"></div>
+    <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+      <button class="btn btn-primary" data-close="createdUserModal">Закрыть</button>
+    </div>
   </div>
 </div>
 
@@ -595,23 +605,52 @@
 
   document.getElementById('createAdminForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    var btn      = document.getElementById('submitAdminBtn');
-    var email    = document.getElementById('adminEmail').value.trim();
-    var password = document.getElementById('adminPassword').value;
+    var btn   = document.getElementById('submitAdminBtn');
+    var email = document.getElementById('adminEmail').value.trim();
     showAlert('createAdminAlert', '', 'success');
-    if (!email)    { showAlert('createAdminAlert', 'Укажите email.', 'error'); return; }
-    if (!password) { showAlert('createAdminAlert', 'Укажите пароль.', 'error'); return; }
+    if (!email) { showAlert('createAdminAlert', 'Укажите email.', 'error'); return; }
     btn.disabled = true; btn.textContent = 'Создание...';
-    /* linkedCompanyId не передаём — backend подставит из сессии создателя */
-    Api.createUser({ email: email, password: password, role: 'COMPANY_ADMIN' })
+    /* linkedCompanyId и password не передаём — backend сгенерирует пароль и вернёт его */
+    Api.createUser({ email: email, role: 'COMPANY_ADMIN' })
       .then(function (result) {
-        showAlert('createAdminAlert', '✓ Администратор <strong>#' + esc(result.id) + '</strong> (' + esc(result.email) + ') создан!', 'success');
+        showCreatedUserModal(result);
         document.getElementById('createAdminForm').reset();
         loadAdmins(0);
       })
       .catch(function (err) { showAlert('createAdminAlert', 'Ошибка: ' + esc(err.message), 'error'); })
       .finally(function () { btn.disabled = false; btn.textContent = 'Создать администратора'; });
   });
+
+  /** Показывает модалку с данными созданного пользователя (id + email + linkedCompanyId + пароль). */
+  function showCreatedUserModal(user) {
+    document.getElementById('createdUserContent').innerHTML =
+      '<div class="alert alert-success" style="margin-bottom: 16px;">' +
+        '✓ Пользователь успешно создан в компании.' +
+      '</div>' +
+      '<div class="detail-grid">' +
+        '<div class="detail-item">' +
+          '<div class="detail-label">ID пользователя</div>' +
+          '<div class="detail-value"><strong>#' + esc(user.id) + '</strong></div>' +
+        '</div>' +
+        '<div class="detail-item">' +
+          '<div class="detail-label">ID компании</div>' +
+          '<div class="detail-value">' + (user.linkedCompanyId ? '<strong>#' + esc(user.linkedCompanyId) + '</strong>' : '—') + '</div>' +
+        '</div>' +
+        '<div class="detail-item span-2">' +
+          '<div class="detail-label">Email</div>' +
+          '<div class="detail-value">' + esc(user.email || '—') + '</div>' +
+        '</div>' +
+        '<div class="detail-item span-2">' +
+          '<div class="detail-label">Пароль</div>' +
+          '<div class="detail-value"><code style="font-size:1rem;background:#f1f5f9;padding:4px 8px;border-radius:4px;">' +
+            esc(user.password || '—') + '</code></div>' +
+        '</div>' +
+      '</div>' +
+      '<p class="hint" style="margin-top:14px;">' +
+        'Сохраните пароль — повторно его получить нельзя.' +
+      '</p>';
+    openModal('createdUserModal');
+  }
 
   /* ===== Modal close ===== */
   document.querySelectorAll('[data-close]').forEach(function (el) {

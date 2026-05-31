@@ -2,6 +2,7 @@ package com.barabanov.metricsExchange.mapper;
 
 import com.barabanov.metricsExchange.entity.UserEntity;
 import com.barabanov.metricsExchange.interfaces.rest.dto.CreateUserDto;
+import com.barabanov.metricsExchange.interfaces.rest.dto.UserCreatedDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.UserDto;
 import com.barabanov.metricsExchange.interfaces.rest.dto.UserRegisterDto;
 import org.mapstruct.Mapper;
@@ -22,6 +23,10 @@ public interface UserMapper {
 
     @Mapping(target = "linkedCompanyId", source = "source.linkedCompany.id")
     UserDto toUserDto(UserEntity source);
+
+    @Mapping(target = "linkedCompanyId", source = "source.linkedCompany.id")
+    @Mapping(target = "password", source = "createdPass")
+    UserCreatedDto toUserCreatedDto(UserEntity source, String createdPass);
 
 
     default User toSpringSecUser(UserEntity source) {

@@ -5,6 +5,8 @@ import com.barabanov.metricsExchange.service.CompanyPointService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -19,10 +21,11 @@ public class CompanyPointController {
 
     // Рест на создание у компании точку для предоставления метрик
     @PostMapping("/company-point/create")
-    public CompanyPointDto createCompanyPoint(@RequestBody CreateCompanyPointDto createCompanyPointDto) {
+    public CompanyPointDto createCompanyPoint(@RequestBody CreateCompanyPointDto createCompanyPointDto,
+                                              @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("Получен запрос на создание точки компании");
-        return companyPointService.createCompanyPoint(createCompanyPointDto);
+        return companyPointService.createCompanyPoint(createCompanyPointDto, userDetails.getUsername());
     }
 
 
@@ -48,10 +51,11 @@ public class CompanyPointController {
     // Рест на просмотр списка всех точек компании для предоставления метрик с пагинацией
     // Рест на просмотр списка точек компаний для конкретной точки альянса
     @PostMapping("/company-points")
-    public PageResponse<CompanyPointDto> getPointsPage(@RequestBody CompanyPointPageRequest companyPointPageRequest) {
+    public PageResponse<CompanyPointDto> getPointsPage(@RequestBody CompanyPointPageRequest companyPointPageRequest,
+                                                       @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("Получен запрос на получение набора точек компаний");
-        return companyPointService.getCompanyPointPage(companyPointPageRequest);
+        return companyPointService.getCompanyPointPage(companyPointPageRequest, userDetails);
     }
 
 
