@@ -242,6 +242,20 @@
 
 </main>
 
+<!-- Модалка с данными созданного пользователя (id + email + linkedCompanyId + сгенерированный пароль) -->
+<div class="modal-overlay" id="createdUserModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Пользователь создан</h3>
+      <button class="modal-close" data-close="createdUserModal" aria-label="Закрыть">×</button>
+    </div>
+    <div id="createdUserContent"></div>
+    <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+      <button class="btn btn-primary" data-close="createdUserModal">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
 <script>
@@ -492,14 +506,44 @@
     btn.disabled = true; btn.textContent = 'Создание...';
     Api.createUser(payload)
       .then(function (result) {
-        showAlert('createUserAlert',
-          '✓ Пользователь <strong>#' + esc(result.id) + '</strong> (' + esc(result.email) + ') создан!', 'success');
+        showCreatedUserModal(result);
         document.getElementById('createUserForm').reset();
         loadUsers(0);
       })
       .catch(function (err) { showAlert('createUserAlert', 'Ошибка: ' + esc(err.message), 'error'); })
       .finally(function () { btn.disabled = false; btn.textContent = 'Создать пользователя'; });
   });
+
+  /** Показывает модалку с данными созданного пользователя (id + email + linkedCompanyId + пароль). */
+  function showCreatedUserModal(user) {
+    document.getElementById('createdUserContent').innerHTML =
+      '<div class="alert alert-success" style="margin-bottom: 16px;">' +
+        '✓ Пользователь успешно создан.' +
+      '</div>' +
+      '<div class="detail-grid">' +
+        '<div class="detail-item">' +
+          '<div class="detail-label">ID пользователя</div>' +
+          '<div class="detail-value"><strong>#' + esc(user.id) + '</strong></div>' +
+        '</div>' +
+        '<div class="detail-item">' +
+          '<div class="detail-label">ID компании</div>' +
+          '<div class="detail-value">' + (user.linkedCompanyId ? '<strong>#' + esc(user.linkedCompanyId) + '</strong>' : '—') + '</div>' +
+        '</div>' +
+        '<div class="detail-item span-2">' +
+          '<div class="detail-label">Email</div>' +
+          '<div class="detail-value">' + esc(user.email || '—') + '</div>' +
+        '</div>' +
+        '<div class="detail-item span-2">' +
+          '<div class="detail-label">Пароль</div>' +
+          '<div class="detail-value"><code style="font-size:1rem;background:#f1f5f9;padding:4px 8px;border-radius:4px;">' +
+            esc(user.password || '—') + '</code></div>' +
+        '</div>' +
+      '</div>' +
+      '<p class="hint" style="margin-top:14px;">' +
+        'Сохраните пароль — повторно его получить нельзя.' +
+      '</p>';
+    document.getElementById('createdUserModal').classList.add('open');
+  }
 
   /* ===== Список пользователей ===== */
   function loadUsers(page) {
@@ -609,6 +653,24 @@
       if (btn.dataset.tab === 'alliances') loadAlliances(0);
       if (btn.dataset.tab === 'users')     loadUsers(0);
     });
+  });
+
+  /* ===== Закрытие модалок (× / кнопка / overlay / Escape) ===== */
+  document.querySelectorAll('[data-close]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var m = document.getElementById(el.dataset.close);
+      if (m) m.classList.remove('open');
+    });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(function (m) { m.classList.remove('open'); });
+    }
   });
 
   /* ===== Init ===== */
